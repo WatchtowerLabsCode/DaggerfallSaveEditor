@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daggerfall Save Editor - Watchtower Labs</title>
+    <link rel="icon" type="image/png" href="favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -51,7 +52,8 @@
         }
         .tab-button:hover { background-color: #5a3f2f; color: #fff7d6; }
         .tab-button:active { border-style: inset; top: 2px; }
-        #tabsContainer { border-bottom: 2px solid #1a1008; }
+        #tabsContainer { border-bottom: 2px solid #1a1008; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+        #tabsContainer .tab-button { flex-shrink: 0; white-space: nowrap; }
         .tab-content {
             display: none; padding: 1.5rem; background-color: #3d2b1f; 
             border: 2px solid #1a1008; border-top: none; 
@@ -128,7 +130,8 @@
             border: 1px solid #4a3525; cursor: grab; display: flex; 
             justify-content: space-between; align-items: center; border-radius: 0;
         }
-        .skill-item.dragging { opacity: 0.6; background-color: #4a3525; }
+        .skill-item.dragging { opacity: 0.6; background-color: #4a3525; cursor: grabbing; }
+        body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
         .skill-item:hover { border-color: #f0e68c; }
         .skill-name { flex-grow: 1; color: #e0ccb1; }
         .skill-item input[type="number"] { width: 60px; margin-bottom: 0; margin-left: 1rem; font-size:16px; }
@@ -138,6 +141,7 @@
         }
         .drop-zone.drag-over { background-color: #4a3525; border-color: #f0e68c; }
         .skill-item.drag-over-skill { outline: 2px dashed #f0e68c; outline-offset: 2px; }
+        .skill-item.touch-dragging { opacity: 0.6; background-color: #4a3525; cursor: grabbing; }
         .inventory-list { list-style: none; padding: 0; }
         .inventory-item {
             background-color: #554232; border: 1px solid #4a3525; padding: 0.75rem; 
@@ -146,6 +150,11 @@
         }
         .inventory-item-details { color: #d4bda2; font-size: 1rem; }
         .inventory-item-name { font-weight: normal; color: #e0ccb1; }
+        /* Focus styles */
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #f0e68c; }
+        .btn:focus-visible { outline: 2px solid #f0e68c; outline-offset: 1px; }
+        .tab-button:focus-visible { outline: 2px solid #f0e68c; outline-offset: -2px; }
+
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(0, 0, 0, 0.6); display: flex;
@@ -174,7 +183,7 @@
         </div>
 
         <div id="messageArea" class="message-area hidden mb-4"></div>
-        <div id="tabsContainer" class="mb-0 flex flex-wrap overflow-x-auto"></div>
+        <div id="tabsContainer" class="mb-0 flex"></div>
         <div id="tabContentsContainer"></div>
 
         <div class="mt-8 text-center">
@@ -183,14 +192,14 @@
             </button>
         </div>
          <p class="text-xs text-center mt-4 text-[#a08c71]">
-            Daggerfall Unity Save Editor - 2025 Watchtower Labs
+            Daggerfall Unity Save Editor - 2026 Watchtower Labs
         </p>
     </div>
 
     <!-- Add Item Modal Structure -->
     <div id="consentModal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 480px;">
-            <h3 class="modal-title">Help Improve the Editor</h3>
+            <h3 class="modal-title text-center">Help Improve the Editor</h3>
             <p style="margin-bottom: 0.75rem;">Help improve the Daggerfall Unity Save Editor by anonymously sharing your save data when you upload a file.</p>
             <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 1.5rem;">Data is used solely for improving the editor. No personal information is collected.</p>
             <div class="flex justify-end space-x-3">
@@ -230,7 +239,7 @@
         let saveData = null;
         let originalFileName = 'edited_SaveData.txt';
         let userConsentedToDataSharing = false;
-        const SAVE_SUBMIT_ENDPOINT = '/daggerfall/api/submit-save';
+        const SAVE_SUBMIT_ENDPOINT = '/daggerfall/api/submit-save/';
         let currentAddItemInventoryType = 'player'; 
         let proposedClassChanges = null; 
         let draggedSkillElement = null; 
@@ -486,6 +495,8 @@
                 input.type = type; input.id = path;
                 input.value = (value === null || value === undefined) ? (type === 'number' ? 0 : '') : value;
                 input.dataset.path = path;
+                if (options.min !== undefined) input.min = options.min;
+                if (options.max !== undefined) input.max = options.max;
                 if (type === 'number') { input.addEventListener('input', (e) => updateSaveData(e.target.dataset.path, parseFloat(e.target.value) || 0));
                 } else { input.addEventListener('input', (e) => updateSaveData(e.target.dataset.path, e.target.value)); }
                 container.appendChild(input);
@@ -531,7 +542,7 @@
             };
             for (const [label, key] of Object.entries(attributes)) {
                 const path = `playerData.playerEntity.stats.${key}`;
-                createField(label + ':', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'stats', key]) || 0, path, attrGroup);
+                createField(label + ':', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'stats', key]) || 0, path, attrGroup, { min: 0, max: 100 });
             }
         }
 
@@ -540,7 +551,9 @@
             createField('Current Health:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'currentHealth']) || 0, 'playerData.playerEntity.currentHealth', vitalsGroup);
             createField('Max Health:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'maxHealth']) || 0, 'playerData.playerEntity.maxHealth', vitalsGroup);
             createField('Current Fatigue:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'currentFatigue']) || 0, 'playerData.playerEntity.currentFatigue', vitalsGroup);
+            createField('Max Fatigue:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'maxFatigue']) || 0, 'playerData.playerEntity.maxFatigue', vitalsGroup);
             createField('Current Magicka:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'currentMagicka']) || 0, 'playerData.playerEntity.currentMagicka', vitalsGroup);
+            createField('Max Magicka:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'maxMagicka']) || 0, 'playerData.playerEntity.maxMagicka', vitalsGroup);
         }
         
         function createSkillItem(skillName, skillValue, skillPath, originalCategorySlot) {
@@ -999,9 +1012,11 @@
                 skillName: e.target.dataset.skillName,
                 originalCategorySlot: e.target.dataset.originalCategorySlot 
             }));
+            document.body.classList.add('is-dragging');
             setTimeout(() => { if(draggedSkillElement) draggedSkillElement.classList.add('dragging'); }, 0);
         }
         function handleDragEnd(e) {
+            document.body.classList.remove('is-dragging');
             if (draggedSkillElement) { draggedSkillElement.classList.remove('dragging'); }
             draggedSkillElement = null;
             document.querySelectorAll('.drop-zone.drag-over').forEach(zone => zone.classList.remove('drag-over'));
@@ -1245,6 +1260,7 @@
 
         function deleteItemFromInventory(itemUid, inventoryType) {
             if (!saveData) return;
+            if (!confirm('Are you sure you want to delete this item?')) return;
             const itemsPath = inventoryType === 'player' ? 
                               ['playerData', 'playerEntity', 'items'] : 
                               ['playerData', 'playerEntity', 'wagonItems'];
@@ -1548,6 +1564,107 @@
         consentDenyBtn.addEventListener('click', () => {
             localStorage.setItem('dfSaveEditorConsent', 'no');
             consentModal.classList.add('hidden');
+        });
+
+        // --- Touch Drag-and-Drop for Skills (mobile support) ---
+        let touchDragElement = null;
+        let touchDragData = null;
+
+        document.addEventListener('touchstart', (e) => {
+            const skillItem = e.target.closest('.skill-item');
+            if (!skillItem || e.target.closest('input')) return;
+            touchDragElement = skillItem;
+            touchDragData = {
+                skillName: skillItem.dataset.skillName,
+                originalCategorySlot: skillItem.dataset.originalCategorySlot
+            };
+            skillItem.classList.add('touch-dragging');
+            document.body.classList.add('is-dragging');
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!touchDragElement) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            // Clear previous highlights
+            document.querySelectorAll('.drop-zone.drag-over').forEach(z => z.classList.remove('drag-over'));
+            document.querySelectorAll('.skill-item.drag-over-skill').forEach(s => s.classList.remove('drag-over-skill'));
+            if (!elementBelow) return;
+            const dropZone = elementBelow.closest('.drop-zone');
+            const targetSkill = elementBelow.closest('.skill-item');
+            if (targetSkill && targetSkill !== touchDragElement) {
+                targetSkill.classList.add('drag-over-skill');
+            } else if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!touchDragElement) return;
+            const touch = e.changedTouches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            // Clean up visual state
+            touchDragElement.classList.remove('touch-dragging');
+            document.body.classList.remove('is-dragging');
+            document.querySelectorAll('.drop-zone.drag-over').forEach(z => z.classList.remove('drag-over'));
+            document.querySelectorAll('.skill-item.drag-over-skill').forEach(s => s.classList.remove('drag-over-skill'));
+
+            if (!elementBelow) { touchDragElement = null; touchDragData = null; return; }
+
+            const career = getNestedValue(saveData, ['playerData', 'playerEntity', 'careerTemplate']);
+            if (!career) { touchDragElement = null; touchDragData = null; return; }
+
+            const draggedSkillName = touchDragData.skillName;
+            const draggedSkillOriginalSlot = touchDragData.originalCategorySlot;
+            const targetSkillItem = elementBelow.closest('.skill-item');
+            const targetDropZone = elementBelow.closest('.drop-zone');
+
+            if (targetSkillItem && targetSkillItem !== touchDragElement) {
+                // Swap with another skill (same logic as handleDrop)
+                const targetSkillName = targetSkillItem.dataset.skillName;
+                const targetSkillOriginalSlot = targetSkillItem.dataset.originalCategorySlot;
+                if (draggedSkillName !== targetSkillName) {
+                    if (draggedSkillOriginalSlot && targetSkillOriginalSlot) {
+                        career[targetSkillOriginalSlot] = draggedSkillName;
+                        career[draggedSkillOriginalSlot] = targetSkillName;
+                        showMessage(`Swapped '${draggedSkillName}' with '${targetSkillName}'.`, 'success');
+                    } else if (draggedSkillOriginalSlot && !targetSkillOriginalSlot) {
+                        career[draggedSkillOriginalSlot] = targetSkillName;
+                        showMessage(`Swapped '${draggedSkillName}' with '${targetSkillName}'.`, 'success');
+                    } else if (!draggedSkillOriginalSlot && targetSkillOriginalSlot) {
+                        career[targetSkillOriginalSlot] = draggedSkillName;
+                        showMessage(`Swapped '${targetSkillName}' with '${draggedSkillName}'.`, 'success');
+                    }
+                    const skillsTabContent = document.getElementById('tab-content-skills');
+                    if (skillsTabContent) populateSkillsTab(saveData, skillsTabContent);
+                }
+            } else if (targetDropZone && targetDropZone.dataset.category) {
+                // Drop onto a category zone (same logic as handleDrop)
+                const targetCategoryType = targetDropZone.dataset.category;
+                if (draggedSkillOriginalSlot && draggedSkillOriginalSlot.startsWith(SKILL_CATEGORY_PREFIX[targetCategoryType])) {
+                    showMessage(`Skill already in ${targetCategoryType}.`, 'info');
+                } else {
+                    const targetPrefix = SKILL_CATEGORY_PREFIX[targetCategoryType];
+                    const targetLimit = SKILL_CATEGORY_LIMITS[targetCategoryType];
+                    let freeSlot = null;
+                    for (let i = 1; i <= targetLimit; i++) {
+                        if (!career[`${targetPrefix}${i}`]) { freeSlot = `${targetPrefix}${i}`; break; }
+                    }
+                    if (!freeSlot) {
+                        showMessage(`${targetCategoryType} skills full. Swap with an existing skill instead.`, 'error');
+                    } else {
+                        if (draggedSkillOriginalSlot) career[draggedSkillOriginalSlot] = null;
+                        career[freeSlot] = draggedSkillName;
+                        showMessage(`Moved '${draggedSkillName}' to ${targetCategoryType} (${freeSlot}).`, 'success');
+                        const skillsTabContent = document.getElementById('tab-content-skills');
+                        if (skillsTabContent) populateSkillsTab(saveData, skillsTabContent);
+                    }
+                }
+            }
+
+            touchDragElement = null;
+            touchDragData = null;
         });
 
     </script>
