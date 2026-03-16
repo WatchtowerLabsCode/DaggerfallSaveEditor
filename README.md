@@ -72,8 +72,6 @@ daggerfall/
 
 The app is a single HTML file — open it directly in a browser or serve it from any web server. No build step or package manager required.
 
-For the hosted version at watchtowerlabs.net, it runs on an Apache-PHP container behind an Nginx Proxy Manager reverse proxy.
-
 ## License
 
 2026 Watchtower Labs
