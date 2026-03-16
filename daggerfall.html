@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daggerfall Save Editor - Watchtower Labs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        /* Custom scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #6b4f3a #261a0f;
+        }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #261a0f; border-left: 1px solid #1a1008; }
+        ::-webkit-scrollbar-thumb { background: #6b4f3a; border: 1px solid #4a3525; }
+        ::-webkit-scrollbar-thumb:hover { background: #7c5c4a; }
+        ::-webkit-scrollbar-corner { background: #261a0f; }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: #261a0f;
+            color: #e0ccb1;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+        button, input, optgroup, select, textarea {
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            color: inherit;
+        }
+        .main-container {
+            background-color: #3d2b1f; 
+            border: 3px solid #1a1008; 
+            box-shadow: 5px 5px 0px #1a1008; 
+        }
+        h1 {
+            color: #f0e68c; 
+            text-shadow: 2px 2px 0px #1a1008;
+        }
+        .tab-button {
+            padding: 0.5rem 1rem; cursor: pointer; border: 2px outset #5a3f2f; 
+            background-color: #4a3525; color: #e0ccb1; margin-right: 4px;
+            margin-bottom: -2px; position: relative; top: 0; transition: none; 
+        }
+        .tab-button.active {
+            background-color: #3d2b1f; color: #f0e68c; 
+            border-bottom-color: #3d2b1f; position: relative; top: 2px; z-index: 1;
+        }
+        .tab-button:hover { background-color: #5a3f2f; color: #fff7d6; }
+        .tab-button:active { border-style: inset; top: 2px; }
+        #tabsContainer { border-bottom: 2px solid #1a1008; }
+        .tab-content {
+            display: none; padding: 1.5rem; background-color: #3d2b1f; 
+            border: 2px solid #1a1008; border-top: none; 
+        }
+        .tab-content.active { display: block; }
+        .editor-group {
+            margin-bottom: 1.5rem; padding: 1rem; background-color: #4a3525; 
+            border: 2px inset #2e1e14;
+        }
+        .editor-group-title {
+            font-weight: normal; color: #f0e68c; margin-bottom: 1rem; font-size: 1.25rem; 
+        }
+        label { display: block; margin-bottom: 0.25rem; font-weight: normal; color: #d4bda2; }
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%; padding: 0.35rem 0.5rem; border: 2px inset #2e1e14;
+            background-color: #261a0f; color: #e0ccb1; margin-bottom: 0.75rem;
+            border-radius: 0; box-shadow: none; 
+        }
+        input[type="number"] { letter-spacing: 1px; }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none !important;
+            margin: 0 !important;
+        }
+        input[type=number] {
+            -moz-appearance: textfield !important; 
+        }
+        select {
+            appearance: none; 
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' fill='%23e0ccb1'%3E%3Cpath d='M0 2l4 4L8 2z'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center; background-repeat: no-repeat;
+            background-size: 12px 12px; padding-right: 2rem;
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem; appearance: none; width: 16px; height: 16px;
+            border: 2px solid #5a3f2f; background-color: #261a0f; position: relative; top: 3px;
+        }
+        input[type="checkbox"]:checked { background-color: #f0e68c; border-color: #e0ccb1; }
+        input[type="checkbox"]:checked::after {
+            content: 'X'; color: #261a0f; position: absolute; left: 50%; top: 50%;
+            transform: translate(-50%, -50%); font-size: 14px; line-height: 1;
+        }
+        .btn {
+            padding: 0.5rem 1rem; border: 2px outset #5a3f2f; font-weight: normal; cursor: pointer;
+            background-color: #4a3525; color: #e0ccb1; border-radius: 0;
+            text-shadow: 1px 1px 0px #1a1008; box-shadow: 2px 2px 0px #1a1008; transition: none;
+        }
+        .btn:hover { background-color: #5a3f2f; color: #fff7d6; }
+        .btn:active { border-style: inset; box-shadow: none; position: relative; top: 1px; left: 1px; }
+        .btn-primary { background-color: #6b4f3a; border-color: #7c5c4a; }
+        .btn-primary:hover { background-color: #7c5c4a; }
+        .btn-danger { background-color: #702b2b; border-color: #8a3b3b; color: #f5c5c5;}
+        .btn-danger:hover { background-color: #8a3b3b; }
+        .btn-secondary { background-color: #555; border-color: #666; }
+        .btn-secondary:hover { background-color: #666; }
+        .btn:disabled {
+            background-color: #38281c; color: #6a5541; border-color: #4a3525;
+            cursor: not-allowed; box-shadow: none; text-shadow: none;
+        }
+        .message-area { padding: 0.75rem; border: 2px solid #1a1008; font-weight: normal; margin-top: 1rem;}
+        .message-success { background-color: #3a593a; color: #c8e6c8; border-color: #2a402a;}
+        .message-error { background-color: #5a3a3a; color: #e6c8c8; border-color: #402a2a;}
+        .message-info { background-color: #3a4b59; color: #c8d4e6; border-color: #2a3540;}
+        input[type="file"] { color: #d4bda2; border: 1px solid #4a3525; padding: 0.25rem;}
+        input[type="file"]::-webkit-file-upload-button {
+            padding: 0.35rem 0.75rem; margin-right: 0.5rem; border: 2px outset #5a3f2f;
+            font-weight: normal; cursor: pointer; background-color: #4a3525;
+            color: #e0ccb1; border-radius: 0; text-shadow: 1px 1px 0px #1a1008;
+        }
+        input[type="file"]::-webkit-file-upload-button:hover { background-color: #5a3f2f; color: #fff7d6;}
+        input[type="file"]::-webkit-file-upload-button:active { border-style: inset;}
+        .skill-item {
+            padding: 0.5rem; margin-bottom: 0.5rem; background-color: #554232;
+            border: 1px solid #4a3525; cursor: grab; display: flex; 
+            justify-content: space-between; align-items: center; border-radius: 0;
+        }
+        .skill-item.dragging { opacity: 0.6; background-color: #4a3525; }
+        .skill-item:hover { border-color: #f0e68c; }
+        .skill-name { flex-grow: 1; color: #e0ccb1; }
+        .skill-item input[type="number"] { width: 60px; margin-bottom: 0; margin-left: 1rem; font-size:16px; }
+        .drop-zone {
+            min-height: 50px; border: 2px dashed #5a3f2f; padding: 0.5rem; 
+            transition: none; border-radius: 0;
+        }
+        .drop-zone.drag-over { background-color: #4a3525; border-color: #f0e68c; }
+        .skill-item.drag-over-skill { outline: 2px dashed #f0e68c; outline-offset: 2px; }
+        .inventory-list { list-style: none; padding: 0; }
+        .inventory-item {
+            background-color: #554232; border: 1px solid #4a3525; padding: 0.75rem; 
+            margin-bottom: 0.5rem; display: flex; justify-content: space-between; 
+            align-items: center; border-radius: 0;
+        }
+        .inventory-item-details { color: #d4bda2; font-size: 1rem; }
+        .inventory-item-name { font-weight: normal; color: #e0ccb1; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6); display: flex;
+            align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background-color: #3d2b1f; padding: 2rem; border: 3px solid #1a1008;
+            width: 90%; max-width: 500px; box-shadow: 5px 5px 0px #1a1008; border-radius: 0;
+        }
+        .modal-title { font-size: 1.75rem; color: #f0e68c; margin-bottom: 1rem; text-shadow: 2px 2px 0px #1a1008;}
+        .preview-area { border: 1px solid #5a3f2f; padding: 0.75rem; margin-top: 1rem; background-color: #261a0f;}
+        .preview-area h4 { color: #f0e68c; margin-bottom: 0.5rem; font-size: 1.1rem;}
+        .preview-area ul { list-style: disc; margin-left: 1.5rem; }
+        .preview-area li { margin-bottom: 0.25rem; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <div class="main-container w-full max-w-3xl p-6 md:p-8 rounded-none">
+        <h1 class="text-3xl text-center mb-6">Daggerfall Unity Save Editor</h1>
+
+        <div class="mb-6 p-4 bg-[#261a0f] border border-[#4a3525]">
+            <label for="jsonFile" class="block text-lg font-medium mb-2">Upload Save File (SaveData.txt or .json)</label>
+            <input type="file" id="jsonFile" accept=".json,.txt" class="w-full">
+            <p id="fileNameDisplay" class="text-sm text-[#a08c71] mt-1"></p>
+        </div>
+
+        <div id="messageArea" class="message-area hidden mb-4"></div>
+        <div id="tabsContainer" class="mb-0 flex flex-wrap overflow-x-auto"></div>
+        <div id="tabContentsContainer"></div>
+
+        <div class="mt-8 text-center">
+            <button id="saveChangesBtn" class="btn btn-primary w-full md:w-auto" disabled>
+                Save and Download Changes
+            </button>
+        </div>
+         <p class="text-xs text-center mt-4 text-[#a08c71]">
+            Daggerfall Unity Save Editor - 2025 Watchtower Labs
+        </p>
+    </div>
+
+    <!-- Add Item Modal Structure -->
+    <div id="consentModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 480px;">
+            <h3 class="modal-title">Help Improve the Editor</h3>
+            <p style="margin-bottom: 0.75rem;">Help improve the Daggerfall Unity Save Editor by anonymously sharing your save data when you upload a file.</p>
+            <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 1.5rem;">Data is used solely for improving the editor. No personal information is collected.</p>
+            <div class="flex justify-end space-x-3">
+                <button id="consentDenyBtn" class="btn btn-secondary">No Thanks</button>
+                <button id="consentAllowBtn" class="btn btn-primary">Allow</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addItemModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="addItemModalTitle" class="modal-title">Add New Item</h3>
+            <div class="space-y-4">
+                <div>
+                    <label for="itemCategorySelect" class="block text-sm font-medium">Category</label>
+                    <select id="itemCategorySelect"></select>
+                </div>
+                <div>
+                    <label for="itemSelect" class="block text-sm font-medium">Item</label>
+                    <select id="itemSelect"></select>
+                </div>
+                <div>
+                    <label for="itemQuantityInput" class="block text-sm font-medium">Quantity</label>
+                    <input type="number" id="itemQuantityInput" value="1" min="1">
+                </div>
+                <div id="itemSpecificFieldsContainer"></div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancelAddItemBtn" class="btn btn-secondary">Cancel</button>
+                <button id="confirmAddItemBtn" class="btn btn-primary">Add to Inventory</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global State ---
+        let saveData = null;
+        let originalFileName = 'edited_SaveData.txt';
+        let userConsentedToDataSharing = false;
+        const SAVE_SUBMIT_ENDPOINT = '/daggerfall/api/submit-save';
+        let currentAddItemInventoryType = 'player'; 
+        let proposedClassChanges = null; 
+        let draggedSkillElement = null; 
+
+        // --- Constants ---
+        const SKILL_CATEGORY_LIMITS = { Primary: 3, Major: 3, Minor: 6 };
+        const SKILL_CATEGORY_PREFIX = { Primary: 'PrimarySkill', Major: 'MajorSkill', Minor: 'MinorSkill' };
+        
+        const VAMPIRE_CLAN_NAMES = ["Anthotis", "Garlythi", "Haarvenu", "Ilessan", "Khulari", "Montalion", "Selenu", "Thrafey", "Vraseth"];
+
+        const CLASS_DEFINITIONS = {
+            "Acrobat":    { Name: "Acrobat",    HitPointsPerLevel: 10, AdvancementMultiplier: 1.5, PrimarySkills: ["Dodging", "Jumping", "Climbing"], MajorSkills: ["Stealth", "ShortBlade", "Running"], MinorSkills: ["Pickpocket", "Swimming", "Archery", "Alteration", "Destruction", "Restoration"] },
+            "Archer":     { Name: "Archer",     HitPointsPerLevel: 14, AdvancementMultiplier: 1.0, PrimarySkills: ["Archery", "Dodging", "Running"], MajorSkills: ["LongBlade", "Stealth", "Medical"], MinorSkills: ["Climbing", "Swimming", "CriticalStrike", "Alteration", "Illusion", "Mysticism"] },
+            "Assassin":   { Name: "Assassin",   HitPointsPerLevel: 12, AdvancementMultiplier: 1.2, PrimarySkills: ["Stealth", "ShortBlade", "Archery"], MajorSkills: ["Dodging", "Climbing", "Backstabbing"], MinorSkills: ["Pickpocket", "Running", "Swimming", "CriticalStrike", "Streetwise", "Illusion"] },
+            "Barbarian":  { Name: "Barbarian",  HitPointsPerLevel: 20, AdvancementMultiplier: 0.8, PrimarySkills: ["Axe", "Running", "Swimming"], MajorSkills: ["BluntWeapon", "Dodging", "Climbing"], MinorSkills: ["Archery", "HandToHand", "Jumping", "Medical", "Stealth", "Destruction"] },
+            "Bard":       { Name: "Bard",       HitPointsPerLevel: 10, AdvancementMultiplier: 1.3, PrimarySkills: ["Etiquette", "Mercantile", "Streetwise"], MajorSkills: ["LongBlade", "Pickpocket", "Stealth"], MinorSkills: ["Archery", "Daedric", "Dodging", "Jumping", "Running", "Restoration"] },
+            "Battlemage": { Name: "Battlemage", HitPointsPerLevel: 14, AdvancementMultiplier: 1.0, PrimarySkills: ["LongBlade", "Destruction", "Alteration"], MajorSkills: ["Axe", "Healing", "Mysticism"], MinorSkills: ["Archery", "BluntWeapon", "Daedric", "Dodging", "Running", "Thaumaturgy"] },
+            "Burglar":    { Name: "Burglar",    HitPointsPerLevel: 12, AdvancementMultiplier: 1.3, PrimarySkills: ["Lockpicking", "Pickpocket", "Stealth"], MajorSkills: ["ShortBlade", "Dodging", "Streetwise"], MinorSkills: ["Climbing", "Jumping", "Running", "Backstabbing", "Mercantile", "Restoration"] },
+            "Healer":     { Name: "Healer",     HitPointsPerLevel: 12, AdvancementMultiplier: 1.2, PrimarySkills: ["Restoration", "Medical", "Dodging"], MajorSkills: ["Alteration", "Mysticism", "ShortBlade"], MinorSkills: ["BluntWeapon", "Illusion", "Jumping", "Mercantile", "Running", "Streetwise"] },
+            "Knight":     { Name: "Knight",     HitPointsPerLevel: 18, AdvancementMultiplier: 0.8, PrimarySkills: ["LongBlade", "Etiquette", "Medical"], MajorSkills: ["Axe", "BluntWeapon", "Dodging"], MinorSkills: ["Archery", "HandToHand", "Running", "Streetwise", "Swimming", "Restoration"] },
+            "Mage":       { Name: "Mage",       HitPointsPerLevel: 8,  AdvancementMultiplier: 1.5, PrimarySkills: ["Destruction", "Restoration", "Alteration"], MajorSkills: ["Illusion", "Mysticism", "Thaumaturgy"], MinorSkills: ["Daedric", "Dodging", "Medical", "Running", "ShortBlade", "Streetwise"] },
+            "Monk":       { Name: "Monk",       HitPointsPerLevel: 12, AdvancementMultiplier: 1.2, PrimarySkills: ["HandToHand", "Dodging", "Medical"], MajorSkills: ["CriticalStrike", "Jumping", "Swimming"], MinorSkills: ["Alteration", "BluntWeapon", "Illusion", "Running", "Stealth", "Streetwise"] },
+            "Nightblade": { Name: "Nightblade", HitPointsPerLevel: 10, AdvancementMultiplier: 1.3, PrimarySkills: ["ShortBlade", "Stealth", "Illusion"], MajorSkills: ["Dodging", "Running", "Destruction"], MinorSkills: ["Alteration", "Archery", "Climbing", "CriticalStrike", "Pickpocket", "Thaumaturgy"] },
+            "Ranger":     { Name: "Ranger",     HitPointsPerLevel: 16, AdvancementMultiplier: 0.9, PrimarySkills: ["LongBlade", "Archery", "Stealth"], MajorSkills: ["Climbing", "Dodging", "Running"], MinorSkills: ["Axe", "HandToHand", "Medical", "Swimming", "Alteration", "Restoration"] },
+            "Rogue":      { Name: "Rogue",      HitPointsPerLevel: 14, AdvancementMultiplier: 1.0, PrimarySkills: ["ShortBlade", "Dodging", "Streetwise"], MajorSkills: ["Archery", "Pickpocket", "Mercantile"], MinorSkills: ["Backstabbing", "BluntWeapon", "Climbing", "Jumping", "Running", "Stealth"] },
+            "Sorcerer":   { Name: "Sorcerer",   HitPointsPerLevel: 8,  AdvancementMultiplier: 1.5, PrimarySkills: ["Alteration", "Thaumaturgy", "Mysticism"], MajorSkills: ["Destruction", "Illusion", "Medical"], MinorSkills: ["Archery", "BluntWeapon", "CriticalStrike", "Dodging", "Running", "Swimming"] },
+            "Spellsword": { Name: "Spellsword", HitPointsPerLevel: 12, AdvancementMultiplier: 1.2, PrimarySkills: ["LongBlade", "Destruction", "Dodging"], MajorSkills: ["Alteration", "HandToHand", "Running"], MinorSkills: ["Archery", "Axe", "Medical", "Mysticism", "Stealth", "Swimming"] },
+            "Thief":      { Name: "Thief",      HitPointsPerLevel: 14, AdvancementMultiplier: 1.0, PrimarySkills: ["Pickpocket", "ShortBlade", "Stealth"], MajorSkills: ["Climbing", "Dodging", "Jumping"], MinorSkills: ["Archery", "Backstabbing", "Lockpicking", "Mercantile", "Running", "Streetwise"] },
+            "Warrior":    { Name: "Warrior",    HitPointsPerLevel: 20, AdvancementMultiplier: 0.75,PrimarySkills: ["Axe", "LongBlade", "BluntWeapon"], MajorSkills: ["Archery", "HandToHand", "ShortBlade"], MinorSkills: ["Climbing", "Dodging", "Jumping", "Medical", "Running", "Swimming"] }
+        };
+        
+        const ITEM_TEMPLATES = {
+            Weapons: {
+                IronDagger:         { shortName: "Iron Dagger",         itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.5,  value1: 3,   hits1: 50,  hits2: 50,  enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                SteelDagger:        { shortName: "Steel Dagger",        itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 1, weightInKg: 0.5,  value1: 6,   hits1: 75,  hits2: 75,  enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                SilverDagger:       { shortName: "Silver Dagger",       itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 2, weightInKg: 0.25, value1: 120, hits1: 37,  hits2: 37,  enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                ElvenDagger:        { shortName: "Elven Dagger",        itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 3, weightInKg: 0.25, value1: 240, hits1: 100, hits2: 100, enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                DwarvenDagger:      { shortName: "Dwarven Dagger",      itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 4, weightInKg: 0.75, value1: 480, hits1: 150, hits2: 150, enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                MithrilDagger:      { shortName: "Mithril Dagger",      itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 5, weightInKg: 0.1,  value1: 960, hits1: 125, hits2: 125, enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                AdamantiumDagger:   { shortName: "Adamantium Dagger",   itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 6, weightInKg: 0.25, value1: 1920,hits1: 175, hits2: 175, enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                EbonyDagger:        { shortName: "Ebony Dagger",        itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 7, weightInKg: 0.25, value1: 3840,hits1: 200, hits2: 200, enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                OrcishDagger:       { shortName: "Orcish Dagger",       itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 8, weightInKg: 0.75, value1: 10,  hits1: 62,  hits2: 62,  enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                DaedricDagger:      { shortName: "Daedric Dagger",      itemGroup: "Weapons", groupIndex: 0, nativeMaterialValue: 9, weightInKg: 0.1,  value1: 7680,hits1: 225, hits2: 225, enchantmentPoints: 200, playerTextureArchive: 234, playerTextureRecord: 5, worldTextureArchive: 207, worldTextureRecord: 5 },
+                IronTanto:          { shortName: "Iron Tanto",          itemGroup: "Weapons", groupIndex: 1, nativeMaterialValue: 0, weightInKg: 0.75, value1: 9,   hits1: 50,  hits2: 50,  enchantmentPoints: 220, playerTextureArchive: 234, playerTextureRecord: 22,worldTextureArchive: 207, worldTextureRecord: 10},
+                SteelWakizashi:     { shortName: "Steel Wakizashi",     itemGroup: "Weapons", groupIndex: 2, nativeMaterialValue: 1, weightInKg: 2.0,  value1: 60,  hits1: 300, hits2: 300, enchantmentPoints: 350, playerTextureArchive: 234, playerTextureRecord: 24,worldTextureArchive: 207, worldTextureRecord: 15},
+                MithrilShortsword:  { shortName: "Mithril Shortsword",  itemGroup: "Weapons", groupIndex: 3, nativeMaterialValue: 5, weightInKg: 1.0,  value1: 600, hits1: 750, hits2: 750, enchantmentPoints: 400, playerTextureArchive: 234, playerTextureRecord: 19,worldTextureArchive: 207, worldTextureRecord: 3 },
+                IronBroadsword:     { shortName: "Iron Broadsword",     itemGroup: "Weapons", groupIndex: 5, nativeMaterialValue: 0, weightInKg: 5.0,  value1: 30,  hits1: 600, hits2: 600, enchantmentPoints: 500, playerTextureArchive: 234, playerTextureRecord: 2, worldTextureArchive: 207, worldTextureRecord: 2 },
+                SteelSaber:         { shortName: "Steel Saber",         itemGroup: "Weapons", groupIndex: 6, nativeMaterialValue: 1, weightInKg: 5.0,  value1: 60,  hits1: 700, hits2: 700, enchantmentPoints: 550, playerTextureArchive: 234, playerTextureRecord: 17,worldTextureArchive: 207, worldTextureRecord: 2 },
+                ElvenLongsword:     { shortName: "Elven Longsword",     itemGroup: "Weapons", groupIndex: 7, nativeMaterialValue: 3, weightInKg: 2.5,  value1: 720, hits1: 1000,hits2: 1000,enchantmentPoints: 600, playerTextureArchive: 234, playerTextureRecord: 12,worldTextureArchive: 207, worldTextureRecord: 2 },
+                DwarvenKatana:      { shortName: "Dwarven Katana",      itemGroup: "Weapons", groupIndex: 8, nativeMaterialValue: 4, weightInKg: 3.0,  value1: 1200,hits1: 1200,hits2: 1200,enchantmentPoints: 600, playerTextureArchive: 234, playerTextureRecord: 9, worldTextureArchive: 207, worldTextureRecord: 15},
+                AdamantiumClaymore: { shortName: "Adamantium Claymore", itemGroup: "Weapons", groupIndex: 9, nativeMaterialValue: 6, weightInKg: 5.0,  value1: 4320,hits1: 2100,hits2: 2100,enchantmentPoints: 700, playerTextureArchive: 234, playerTextureRecord: 4, worldTextureArchive: 207, worldTextureRecord: 2 },
+                DaedricDaiKatana:   { shortName: "Daedric Dai-katana",  itemGroup: "Weapons", groupIndex: 10,nativeMaterialValue: 9, weightInKg: 2.0,  value1: 12000,hits1:2000,hits2: 2000,enchantmentPoints: 700, playerTextureArchive: 234, playerTextureRecord: 7, worldTextureArchive: 207, worldTextureRecord: 2 },
+                SteelMace:          { shortName: "Steel Mace",          itemGroup: "Weapons", groupIndex: 11,nativeMaterialValue: 1, weightInKg: 5.5,  value1: 60,  hits1: 1200,hits2: 1200,enchantmentPoints: 500, playerTextureArchive: 234, playerTextureRecord: 14,worldTextureArchive: 207, worldTextureRecord: 6 },
+                MithrilFlail:       { shortName: "Mithril Flail",       itemGroup: "Weapons", groupIndex: 12,nativeMaterialValue: 5, weightInKg: 3.0,  value1: 1200,hits1: 1400,hits2: 1400,enchantmentPoints: 600, playerTextureArchive: 234, playerTextureRecord: 8, worldTextureArchive: 207, worldTextureRecord: 6 },
+                EbonyWarhammer:     { shortName: "Ebony Warhammer",     itemGroup: "Weapons", groupIndex: 15,nativeMaterialValue: 7, weightInKg: 6.0,  value1: 7200,hits1: 2400,hits2: 2400,enchantmentPoints: 700, playerTextureArchive: 234, playerTextureRecord: 23,worldTextureArchive: 207, worldTextureRecord: 8 },
+                IronWarAxe:         { shortName: "Iron War Axe",        itemGroup: "Weapons", groupIndex: 13,nativeMaterialValue: 0, weightInKg: 6.0,  value1: 45,  hits1: 800, hits2: 800, enchantmentPoints: 450, playerTextureArchive: 234, playerTextureRecord: 25,worldTextureArchive: 207, worldTextureRecord: 4 },
+                SteelBattleAxe:     { shortName: "Steel Battle Axe",    itemGroup: "Weapons", groupIndex: 14,nativeMaterialValue: 1, weightInKg: 7.5,  value1: 120, hits1: 1800,hits2: 1800,enchantmentPoints: 525, playerTextureArchive: 234, playerTextureRecord: 0, worldTextureArchive: 207, worldTextureRecord: 4 },
+                ShortBow:           { shortName: "Short Bow",           itemGroup: "Weapons", groupIndex: 16,nativeMaterialValue: 0, weightInKg: 2.0,  value1: 30,  hits1: 200, hits2: 200, enchantmentPoints: 300, playerTextureArchive: 234, playerTextureRecord: 18,worldTextureArchive: 207, worldTextureRecord: 9 },
+                LongBow:            { shortName: "Long Bow",            itemGroup: "Weapons", groupIndex: 17,nativeMaterialValue: 0, weightInKg: 3.0,  value1: 60,  hits1: 300, hits2: 300, enchantmentPoints: 400, playerTextureArchive: 234, playerTextureRecord: 11,worldTextureArchive: 207, worldTextureRecord: 9 },
+                IronArrows:         { shortName: "Iron Arrows",         itemGroup: "Weapons", groupIndex: 4, nativeMaterialValue: 0, weightInKg: 0.1,  value1: 1,   hits1: 1,   hits2: 1,   enchantmentPoints: 0,   playerTextureArchive: 0, playerTextureRecord: 0, worldTextureArchive: 216, worldTextureRecord: 0, stackCount: 30},
+                SteelArrows:        { shortName: "Steel Arrows",        itemGroup: "Weapons", groupIndex: 4, nativeMaterialValue: 1, weightInKg: 0.1,  value1: 2,   hits1: 1,   hits2: 1,   enchantmentPoints: 0,   playerTextureArchive: 0, playerTextureRecord: 0, worldTextureArchive: 216, worldTextureRecord: 0, stackCount: 30},
+            },
+            Armor: { 
+                LeatherCuirass:     { shortName: "Leather Cuirass",     itemGroup: "Armor", groupIndex: 0, nativeMaterialValue: 256, dyeColor: "Default", weightInKg: 5.0,  value1: 40,  hits1: 1024, hits2: 1024, enchantmentPoints: 100, playerTextureArchive: 250, playerTextureRecord: 3, worldTextureArchive: 207, worldTextureRecord: 11, currentVariant: 0 },
+                ChainCuirass:       { shortName: "Chain Cuirass",       itemGroup: "Armor", groupIndex: 0, nativeMaterialValue: 512, dyeColor: "Default", weightInKg: 10.0, value1: 150, hits1: 2048, hits2: 2048, enchantmentPoints: 200, playerTextureArchive: 250, playerTextureRecord: 3, worldTextureArchive: 207, worldTextureRecord: 11, currentVariant: 1 },
+                IronCuirass:        { shortName: "Iron Cuirass",        itemGroup: "Armor", groupIndex: 0, nativeMaterialValue: 0,   dyeColor: "Default", weightInKg: 12.5, value1: 300, hits1: 4096, hits2: 4096, enchantmentPoints: 400, playerTextureArchive: 250, playerTextureRecord: 3, worldTextureArchive: 207, worldTextureRecord: 11, currentVariant: 2 },
+                SteelCuirass:       { shortName: "Steel Cuirass",       itemGroup: "Armor", groupIndex: 0, nativeMaterialValue: 1,   dyeColor: "Default", weightInKg: 11.0, value1: 600, hits1: 5120, hits2: 5120, enchantmentPoints: 400, playerTextureArchive: 250, playerTextureRecord: 3, worldTextureArchive: 207, worldTextureRecord: 11, currentVariant: 3 },
+                LeatherGreaves:     { shortName: "Leather Greaves",     itemGroup: "Armor", groupIndex: 2, nativeMaterialValue: 256, dyeColor: "Default", weightInKg: 1.25, value1: 20, hits1: 1536, hits2: 1536, enchantmentPoints: 25, playerTextureArchive: 250, playerTextureRecord: 10, worldTextureArchive: 207, worldTextureRecord: 13, currentVariant: 0},
+                SteelGreaves:       { shortName: "Steel Greaves",       itemGroup: "Armor", groupIndex: 2, nativeMaterialValue: 1,   dyeColor: "Default", weightInKg: 3.0,  value1: 480, hits1: 4608, hits2: 4608, enchantmentPoints: 50, playerTextureArchive: 250, playerTextureRecord: 10, worldTextureArchive: 207, worldTextureRecord: 13, currentVariant: 5 },
+                LeatherBoots:       { shortName: "Leather Boots",       itemGroup: "Armor", groupIndex: 6, nativeMaterialValue: 256, dyeColor: "Default", weightInKg: 1.0,  value1: 50,  hits1: 2560, hits2: 2560, enchantmentPoints: 175, playerTextureArchive: 250, playerTextureRecord: 0, worldTextureArchive: 204, worldTextureRecord: 1, currentVariant: 0 },
+                IronBoots:          { shortName: "Iron Boots",          itemGroup: "Armor", groupIndex: 6, nativeMaterialValue: 0,   dyeColor: "Default", weightInKg: 2.0,  value1: 150, hits1: 2560, hits2: 2560, enchantmentPoints: 175, playerTextureArchive: 250, playerTextureRecord: 0, worldTextureArchive: 204, worldTextureRecord: 1, currentVariant: 2 },
+                IronHelm:           { shortName: "Iron Helm",           itemGroup: "Armor", groupIndex: 5, nativeMaterialValue: 0,   dyeColor: "Default", weightInKg: 1.25, value1: 80,  hits1: 2560, hits2: 2560, enchantmentPoints: 900, playerTextureArchive: 250, playerTextureRecord: 27,worldTextureArchive: 207, worldTextureRecord: 12,currentVariant: 0 },
+                SteelHelm:          { shortName: "Steel Helm",          itemGroup: "Armor", groupIndex: 5, nativeMaterialValue: 1,   dyeColor: "Default", weightInKg: 1.00, value1: 160, hits1: 3072, hits2: 3072, enchantmentPoints: 900, playerTextureArchive: 250, playerTextureRecord: 27,worldTextureArchive: 207, worldTextureRecord: 12,currentVariant: 1 },
+                IronLeftPauldron:   { shortName: "Iron Left Pauldron",  itemGroup: "Armor", groupIndex: 3, nativeMaterialValue: 0,   dyeColor: "Default", weightInKg: 2.0, value1: 180, hits1: 2048, hits2: 2048, enchantmentPoints: 40, playerTextureArchive: 250, playerTextureRecord: 17, worldTextureArchive: 207, worldTextureRecord: 13, currentVariant: 1},
+                IronRightPauldron:  { shortName: "Iron Right Pauldron", itemGroup: "Armor", groupIndex: 4, nativeMaterialValue: 0,   dyeColor: "Default", weightInKg: 2.0, value1: 180, hits1: 2048, hits2: 2048, enchantmentPoints: 40, playerTextureArchive: 250, playerTextureRecord: 22, worldTextureArchive: 207, worldTextureRecord: 13, currentVariant: 1},
+                IronBuckler:        { shortName: "Iron Buckler",        itemGroup: "Armor", groupIndex: 7, nativeMaterialValue: 0,   dyeColor: "Default", weightInKg: 2.0, value1: 20, hits1: 512,  hits2: 512,  enchantmentPoints: 500, playerTextureArchive: 250, playerTextureRecord: 33, worldTextureArchive: 207, worldTextureRecord: 10, currentVariant: 0},
+                SteelKiteShield:    { shortName: "Steel Kite Shield",   itemGroup: "Armor", groupIndex: 9, nativeMaterialValue: 1,   dyeColor: "Default", weightInKg: 5.0, value1: 120,hits1: 1843, hits2: 1843, enchantmentPoints: 700, playerTextureArchive: 250, playerTextureRecord: 35, worldTextureArchive: 207, worldTextureRecord: 10, currentVariant: 1},
+            },
+            Clothing: { 
+                PlainRobesBlue:     { shortName: "Plain Robes (Blue)",  itemGroup: "MensClothing", groupIndex: 18, nativeMaterialValue: 0, dyeColor: "Blue", weightInKg: 1.0, value1: 10, hits1: 100, hits2: 100, enchantmentPoints: 100, playerTextureArchive: 240, playerTextureRecord: 30, worldTextureArchive: 204, worldTextureRecord: 0},
+                CasualPantsGreen:   { shortName: "Casual Pants (Green)",itemGroup: "MensClothing", groupIndex: 10, nativeMaterialValue: 0, dyeColor: "Green",weightInKg: 0.5, value1: 5,  hits1: 150, hits2: 150, enchantmentPoints: 40,  playerTextureArchive: 240, playerTextureRecord: 16, worldTextureArchive: 204, worldTextureRecord: 0},
+                ShortShirtRed:      { shortName: "Short Shirt (Red)",   itemGroup: "MensClothing", groupIndex: 24, nativeMaterialValue: 0, dyeColor: "Red",  weightInKg: 0.5, value1: 5,  hits1: 100, hits2: 100, enchantmentPoints: 60,  playerTextureArchive: 240, playerTextureRecord: 50, worldTextureArchive: 204, worldTextureRecord: 0},
+                ElegantRobesFemale: { shortName: "Elegant Robes (Female)", itemGroup: "WomensClothing", groupIndex: 18, nativeMaterialValue: 0, dyeColor: "White", weightInKg: 1.0, value1: 100, hits1: 80, hits2: 80, enchantmentPoints: 100, playerTextureArchive: 241, playerTextureRecord: 30, worldTextureArchive: 204, worldTextureRecord: 0}, 
+            },
+            Potions: {
+                PotionOfHealing:    { shortName: "Potion of Healing",   itemGroup: "Potions", groupIndex: 0, nativeMaterialValue: 0, dyeColor: "Red",    weightInKg: 0.5, value1: 25, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:0, worldTextureArchive:215, worldTextureRecord:0, message: 0, potionRecipeKey: "HEALH" },
+                PotionOfStamina:    { shortName: "Potion of Stamina",   itemGroup: "Potions", groupIndex: 1, nativeMaterialValue: 0, dyeColor: "Blue",   weightInKg: 0.5, value1: 25, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:1, worldTextureArchive:215, worldTextureRecord:1, message: 0, potionRecipeKey: "STAMN" },
+                PotionOfResistFire: { shortName: "Potion of Resist Fire",itemGroup: "Potions", groupIndex: 5, nativeMaterialValue: 0, dyeColor: "Orange", weightInKg: 0.5, value1: 75, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:5, worldTextureArchive:215, worldTextureRecord:5, message: 0, potionRecipeKey: "RFIRE" },
+                PotionOfInvisibility:{ shortName: "Potion of Invisibility",itemGroup: "Potions", groupIndex: 10, nativeMaterialValue: 0, dyeColor: "Black", weightInKg: 0.5, value1: 100, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:10, worldTextureArchive:215, worldTextureRecord:10, message: 0, potionRecipeKey: "INVIS" },
+                PotionOfRestorePower:{ shortName: "Potion of Restore Power",itemGroup: "Potions", groupIndex: 3, nativeMaterialValue: 0, dyeColor: "Purple", weightInKg: 0.5, value1: 50, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:3, worldTextureArchive:215, worldTextureRecord:3, message: 0, potionRecipeKey: "RPOWR" },
+                PotionOfCurePoison: { shortName: "Potion of Cure Poison", itemGroup: "Potions", groupIndex: 13, nativeMaterialValue: 0, dyeColor: "Green", weightInKg: 0.5, value1: 40, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:13, worldTextureArchive:215, worldTextureRecord:13, message: 0, potionRecipeKey: "CPOIS" },
+                PotionOfCureDisease:{ shortName: "Potion of Cure Disease",itemGroup: "Potions", groupIndex: 14, nativeMaterialValue: 0, dyeColor: "Yellow",weightInKg: 0.5, value1: 60, hits1:1, hits2:1, enchantmentPoints:0, playerTextureArchive:215, playerTextureRecord:14, worldTextureArchive:215, worldTextureRecord:14, message: 0, potionRecipeKey: "CDISE" },
+            },
+            Ingredients: {
+                RedBerries:         { shortName: "Red Berries",         itemGroup: "PlantIngredients1", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.1, value1: 1, worldTextureArchive: 254, worldTextureRecord: 0},
+                GreenBerries:       { shortName: "Green Berries",       itemGroup: "PlantIngredients1", groupIndex: 1, nativeMaterialValue: 0, weightInKg: 0.1, value1: 1, worldTextureArchive: 254, worldTextureRecord: 1},
+                YellowBerries:      { shortName: "Yellow Berries",      itemGroup: "PlantIngredients1", groupIndex: 2, nativeMaterialValue: 0, weightInKg: 0.1, value1: 1, worldTextureArchive: 254, worldTextureRecord: 2},
+                BlackBerries:       { shortName: "Black Berries",       itemGroup: "PlantIngredients1", groupIndex: 3, nativeMaterialValue: 0, weightInKg: 0.1, value1: 1, worldTextureArchive: 254, worldTextureRecord: 3},
+                Twigs:              { shortName: "Twigs",               itemGroup: "PlantIngredients1", groupIndex: 5, nativeMaterialValue: 0, weightInKg: 0.1, value1: 1, worldTextureArchive: 254, worldTextureRecord: 14},
+                PineBranch:         { shortName: "Pine Branch",         itemGroup: "PlantIngredients1", groupIndex: 6, nativeMaterialValue: 0, weightInKg: 1.0, value1: 4, worldTextureArchive: 254, worldTextureRecord: 15},
+                RedFlowers:         { shortName: "Red Flowers",         itemGroup: "PlantIngredients1", groupIndex: 7, nativeMaterialValue: 0, weightInKg: 0.1, value1: 2, worldTextureArchive: 254, worldTextureRecord: 16},
+                YellowFlowers:      { shortName: "Yellow Flowers",      itemGroup: "PlantIngredients1", groupIndex: 8, nativeMaterialValue: 0, weightInKg: 0.1, value1: 2, worldTextureArchive: 254, worldTextureRecord: 17},
+                GeckoLizardScales:  { shortName: "Lizard Scales", itemGroup: "CreatureIngredients1", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.25, value1: 2, worldTextureArchive: 254, worldTextureRecord: 26},
+                SpiderVenom:        { shortName: "Spider Venom",        itemGroup: "CreatureIngredients1", groupIndex: 2, nativeMaterialValue: 0, weightInKg: 0.25, value1: 6, worldTextureArchive: 254, worldTextureRecord: 28},
+                MummyWrappings:     { shortName: "Mummy Wrappings",     itemGroup: "CreatureIngredients1", groupIndex: 4, nativeMaterialValue: 0, weightInKg: 0.5, value1: 10, worldTextureArchive: 254, worldTextureRecord: 30},
+                WerewolfsBlood:     { shortName: "Werewolf's Blood",    itemGroup: "CreatureIngredients1", groupIndex: 6, nativeMaterialValue: 0, weightInKg: 0.25, value1: 20, worldTextureArchive: 254, worldTextureRecord: 32},
+                PureWater:          { shortName: "Pure Water",          itemGroup: "MiscellaneousIngredients1", groupIndex: 4, nativeMaterialValue: 0, weightInKg: 0.25, value1: 25, worldTextureArchive: 205, worldTextureRecord: 1},
+                Nectar:             { shortName: "Nectar",              itemGroup: "MiscellaneousIngredients1", groupIndex: 7, nativeMaterialValue: 0, weightInKg: 0.25, value1: 15, worldTextureArchive: 254, worldTextureRecord: 52},
+                Mercury:            { shortName: "Mercury",             itemGroup: "MiscellaneousIngredients1", groupIndex: 9, nativeMaterialValue: 0, weightInKg: 0.25, value1: 30, worldTextureArchive: 254, worldTextureRecord: 54},
+                Diamond:            { shortName: "Diamond",             itemGroup: "Gems", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.1, value1: 1000, worldTextureArchive: 254, worldTextureRecord: 18},
+                Ruby:               { shortName: "Ruby",                itemGroup: "Gems", groupIndex: 2, nativeMaterialValue: 0, weightInKg: 0.1, value1: 750, worldTextureArchive: 254, worldTextureRecord: 20},
+                Emerald:            { shortName: "Emerald",             itemGroup: "Gems", groupIndex: 3, nativeMaterialValue: 0, weightInKg: 0.1, value1: 500, worldTextureArchive: 254, worldTextureRecord: 21},
+                Sapphire:           { shortName: "Sapphire",            itemGroup: "Gems", groupIndex: 1, nativeMaterialValue: 0, weightInKg: 0.1, value1: 600, worldTextureArchive: 254, worldTextureRecord: 19},
+            },
+            Books: {
+                CommonBook:         { shortName: "Common Book",         itemGroup: "Books", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 2.0, value1: 10, hits1:20, hits2:20, message: 20, worldTextureArchive: 209, worldTextureRecord: 2 },
+                Spellbook:          { shortName: "Spellbook",           itemGroup: "MiscItems", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.75, value1: 50, hits1:75, hits2:75, worldTextureArchive: 209, worldTextureRecord: 4},
+            },
+            Currency: {
+                GoldPieces:         { shortName: "Gold Pieces",         itemGroup: "Currency", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.0025, value1: 1, hits1:1, hits2:1, worldTextureArchive: 216, worldTextureRecord: 1},
+            },
+            Misc: {
+                Torches:            { shortName: "Torches",             itemGroup: "MiscItems", groupIndex: 4, nativeMaterialValue: 0, weightInKg: 0.25, value1: 1, hits1:1, hits2:1, worldTextureArchive: 216, worldTextureRecord: 4},
+                OilFlask:           { shortName: "Oil Flask",           itemGroup: "MiscItems", groupIndex: 5, nativeMaterialValue: 0, weightInKg: 0.5, value1: 2, hits1:1, hits2:1, worldTextureArchive: 216, worldTextureRecord: 5},
+                HolySymbol:         { shortName: "Holy Symbol",         itemGroup: "ReligiousItems", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 0.25, value1: 10, hits1:1, hits2:1, worldTextureArchive: 207, worldTextureRecord: 0}, 
+                Painting:           { shortName: "Painting",            itemGroup: "Paintings", groupIndex: 0, nativeMaterialValue: 0, weightInKg: 2.0, value1: 50, hits1:1, hits2:1, worldTextureArchive: 452, worldTextureRecord: 0}, 
+                Map:                { shortName: "Map",                 itemGroup: "MiscItems", groupIndex: 8, nativeMaterialValue: 0, weightInKg: 0.25, value1: 0, hits1:1, hits2:1, worldTextureArchive: 209, worldTextureRecord: 8},
+                Lockpick:           { shortName: "Lockpick",            itemGroup: "MiscItems", groupIndex: 6, nativeMaterialValue: 0, weightInKg: 0.1, value1: 5, hits1:1, hits2:1, worldTextureArchive: 216, worldTextureRecord: 6},
+                PotionRecipe:       { shortName: "Potion Recipe",       itemGroup: "MiscItems", groupIndex: 9, nativeMaterialValue: 0, weightInKg: 0.1, value1: 100, hits1:1, hits2:1, worldTextureArchive: 209, worldTextureRecord: 9, message: 0 },
+            }
+        };
+        
+        // --- DOM Elements (defined once) ---
+        const jsonFileInput = document.getElementById('jsonFile');
+        const saveChangesBtn = document.getElementById('saveChangesBtn');
+        const messageArea = document.getElementById('messageArea');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const tabsContainer = document.getElementById('tabsContainer');
+        const tabContentsContainer = document.getElementById('tabContentsContainer');
+        const addItemModal = document.getElementById('addItemModal');
+        const addItemModalTitle = document.getElementById('addItemModalTitle');
+        const itemCategorySelect = document.getElementById('itemCategorySelect');
+        const itemSelect = document.getElementById('itemSelect');
+        const itemQuantityInput = document.getElementById('itemQuantityInput');
+        const itemSpecificFieldsContainer = document.getElementById('itemSpecificFieldsContainer');
+        const cancelAddItemBtn = document.getElementById('cancelAddItemBtn');
+        const confirmAddItemBtn = document.getElementById('confirmAddItemBtn');
+        
+        // --- Function Definitions (Order is Important!) ---
+
+        // Utility Functions
+        function getNestedValue(obj, pathArray) {
+            if (!obj || !pathArray || pathArray.length === 0) return undefined;
+            let current = obj;
+            for (const key of pathArray) {
+                if (current && typeof current === 'object' && key in current) {
+                    current = current[key];
+                } else {
+                    return undefined;
+                }
+            }
+            return current;
+        }
+
+        function setNestedValue(obj, pathArray, value) {
+            if (!obj || !pathArray || pathArray.length === 0) return;
+            let current = obj;
+            for (let i = 0; i < pathArray.length - 1; i++) {
+                const key = pathArray[i];
+                if (!current[key] || typeof current[key] !== 'object') {
+                    current[key] = {};
+                }
+                current = current[key];
+            }
+            current[pathArray[pathArray.length - 1]] = value;
+        }
+
+
+        function updateSaveData(pathString, value) {
+            if (!saveData) return;
+            const keys = pathString.split('.');
+            setNestedValue(saveData, keys, value);
+        }
+
+        function showMessage(text, type = 'info', duration = 5000) {
+            messageArea.textContent = text;
+            messageArea.className = `message-area ${'message-' + type}`;
+            messageArea.classList.remove('hidden');
+            if (duration > 0) {
+                setTimeout(() => messageArea.classList.add('hidden'), duration);
+            }
+        }
+        
+        // Field and Group Creation
+        function createField(labelText, type, value, path, parentElement, options = {}) {
+            const container = document.createElement('div');
+            container.className = 'mb-4';
+            const label = document.createElement('label');
+            label.htmlFor = path;
+            label.textContent = labelText;
+            container.appendChild(label);
+
+            if (type === 'select') {
+                const select = document.createElement('select');
+                select.id = path;
+                select.dataset.path = path;
+                for(const optionText of options.options) {
+                    const option = document.createElement('option');
+                    option.value = optionText;
+                    option.textContent = optionText;
+                    if (optionText === value) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+                select.addEventListener('change', (e) => {
+                    updateSaveData(e.target.dataset.path, e.target.value);
+                    if(options.onchange) options.onchange(e.target.value);
+                });
+                container.appendChild(select);
+            } else if (type === 'checkbox') {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-label mt-1';
+                const input = document.createElement('input');
+                input.type = 'checkbox'; input.id = path; input.checked = Boolean(value);
+                input.dataset.path = path;
+                input.addEventListener('change', (e) => {
+                    // This checkbox is for display/triggering actions, not direct data binding.
+                    // The onchange handler will manage the data changes.
+                    if(options.onchange) options.onchange(e.target.checked);
+                });
+                wrapper.appendChild(input); container.appendChild(wrapper);
+            } else if (type === 'textarea') {
+                const input = document.createElement('textarea');
+                input.id = path; input.value = value; input.dataset.path = path;
+                input.rows = options.rows || 5; input.className = "font-mono text-sm";
+                if (options.isJson) {
+                    input.addEventListener('change', (e) => {
+                        try {
+                            const newArrayValue = JSON.parse(e.target.value);
+                            updateSaveData(e.target.dataset.path, newArrayValue);
+                            showMessage(`Updated ${labelText}. Ensure valid JSON.`, 'info', 3000);
+                        } catch (err) {
+                            showMessage(`Invalid JSON for ${labelText}: ${err.message}`, 'error');
+                            const originalJsonValue = getNestedValue(saveData, e.target.dataset.path.split('.'));
+                            e.target.value = JSON.stringify(originalJsonValue, null, 2);
+                        }
+                    });
+                } else { input.addEventListener('input', (e) => updateSaveData(e.target.dataset.path, e.target.value)); }
+                container.appendChild(input);
+            } else { 
+                const input = document.createElement('input');
+                input.type = type; input.id = path;
+                input.value = (value === null || value === undefined) ? (type === 'number' ? 0 : '') : value;
+                input.dataset.path = path;
+                if (type === 'number') { input.addEventListener('input', (e) => updateSaveData(e.target.dataset.path, parseFloat(e.target.value) || 0));
+                } else { input.addEventListener('input', (e) => updateSaveData(e.target.dataset.path, e.target.value)); }
+                container.appendChild(input);
+            }
+            parentElement.appendChild(container);
+        }
+        
+        function createGroup(title, parentElement, options = {}) {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'editor-group';
+            if (options.isDropZone) {
+                groupDiv.classList.add('drop-zone');
+                groupDiv.dataset.category = options.categoryType; 
+                groupDiv.addEventListener('dragover', handleDragOver);
+                groupDiv.addEventListener('dragleave', handleDragLeaveZone); 
+                groupDiv.addEventListener('drop', handleDrop);
+            }
+            const groupTitle = document.createElement('h3');
+            groupTitle.className = 'editor-group-title';
+            groupTitle.textContent = title;
+            groupDiv.appendChild(groupTitle);
+            parentElement.appendChild(groupDiv);
+            return groupDiv;
+        }
+
+        // --- Tab Population Functions ---
+        function populateCharacterTab(data, parentElement) {
+            const charGroup = createGroup('Basic Information', parentElement);
+            createField('Name:', 'text', getNestedValue(data, ['playerData', 'playerEntity', 'name']) || '', 'playerData.playerEntity.name', charGroup);
+            createField('Race:', 'text', getNestedValue(data, ['playerData', 'playerEntity', 'raceTemplate', 'Name']) || '', 'playerData.playerEntity.raceTemplate.Name', charGroup);
+            createField('Class:', 'text', getNestedValue(data, ['playerData', 'playerEntity', 'careerTemplate', 'Name']) || '', 'playerData.playerEntity.careerTemplate.Name', charGroup);
+            createField('Level:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'level']) || 0, 'playerData.playerEntity.level', charGroup);
+            createField('Gold:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'goldPieces']) || 0, 'playerData.playerEntity.goldPieces', charGroup);
+        }
+
+        function populateAttributesTab(data, parentElement) {
+            const attrGroup = createGroup('Primary Attributes', parentElement);
+            const attributes = {
+                'Strength': 'Strength', 'Intelligence': 'Intelligence',
+                'Willpower': 'Willpower', 'Agility': 'Agility',
+                'Endurance': 'Endurance', 'Personality': 'Personality',
+                'Speed': 'Speed', 'Luck': 'Luck'
+            };
+            for (const [label, key] of Object.entries(attributes)) {
+                const path = `playerData.playerEntity.stats.${key}`;
+                createField(label + ':', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'stats', key]) || 0, path, attrGroup);
+            }
+        }
+
+        function populateVitalsTab(data, parentElement) {
+            const vitalsGroup = createGroup('Vitals', parentElement);
+            createField('Current Health:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'currentHealth']) || 0, 'playerData.playerEntity.currentHealth', vitalsGroup);
+            createField('Max Health:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'maxHealth']) || 0, 'playerData.playerEntity.maxHealth', vitalsGroup);
+            createField('Current Fatigue:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'currentFatigue']) || 0, 'playerData.playerEntity.currentFatigue', vitalsGroup);
+            createField('Current Magicka:', 'number', getNestedValue(data, ['playerData', 'playerEntity', 'currentMagicka']) || 0, 'playerData.playerEntity.currentMagicka', vitalsGroup);
+        }
+        
+        function createSkillItem(skillName, skillValue, skillPath, originalCategorySlot) {
+            const skillItem = document.createElement('div');
+            skillItem.className = 'skill-item'; skillItem.draggable = true;
+            skillItem.dataset.skillName = skillName; skillItem.dataset.skillPath = skillPath; 
+            skillItem.dataset.originalCategorySlot = originalCategorySlot || ''; 
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'skill-name';
+            nameSpan.textContent = skillName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            skillItem.appendChild(nameSpan);
+            const valueInput = document.createElement('input');
+            valueInput.type = 'number'; valueInput.value = skillValue;
+            valueInput.dataset.path = skillPath; 
+            valueInput.addEventListener('input', (e) => updateSaveData(e.target.dataset.path, parseFloat(e.target.value) || 0));
+            skillItem.appendChild(valueInput);
+            skillItem.addEventListener('dragstart', handleDragStart);
+            skillItem.addEventListener('dragend', handleDragEnd);
+            skillItem.addEventListener('dragover', handleDragOverSkillItem); 
+            skillItem.addEventListener('dragleave', handleDragLeaveSkillItem); 
+            return skillItem;
+        }
+
+        function populateSkillsTab(data, parentElement) {
+            parentElement.innerHTML = ''; 
+            const career = getNestedValue(data, ['playerData', 'playerEntity', 'careerTemplate']);
+            const skillsData = getNestedValue(data, ['playerData', 'playerEntity', 'skills']);
+            if (!career || !skillsData) { parentElement.innerHTML = '<p class="text-gray-400">Skill data or career template not found.</p>'; return; }
+            const skillCategories = {
+                Primary: { limit: SKILL_CATEGORY_LIMITS.Primary, prefix: SKILL_CATEGORY_PREFIX.Primary, skills: [], container: null },
+                Major:   { limit: SKILL_CATEGORY_LIMITS.Major,   prefix: SKILL_CATEGORY_PREFIX.Major,   skills: [], container: null },
+                Minor:   { limit: SKILL_CATEGORY_LIMITS.Minor,   prefix: SKILL_CATEGORY_PREFIX.Minor,   skills: [], container: null }
+            };
+            for (const categoryType in skillCategories) {
+                const category = skillCategories[categoryType];
+                category.container = createGroup(`${categoryType} Skills (Max ${category.limit})`, parentElement, { isDropZone: true, categoryType: categoryType });
+                for (let i = 1; i <= category.limit; i++) {
+                    const slotName = `${category.prefix}${i}`; 
+                    const skillNameInSlot = career[slotName];
+                    if (skillNameInSlot && skillsData.hasOwnProperty(skillNameInSlot)) {
+                        const skillValue = skillsData[skillNameInSlot];
+                        const skillPath = `playerData.playerEntity.skills.${skillNameInSlot}`;
+                        const skillItem = createSkillItem(skillNameInSlot, skillValue, skillPath, slotName);
+                        category.container.appendChild(skillItem);
+                    }
+                }
+            }
+            const otherSkillsGroup = createGroup('Other Skills (Unassigned - Drag to Categorize)', parentElement);
+            const assignedSkills = new Set();
+            Object.values(skillCategories).forEach(cat => {
+                for (let i = 1; i <= cat.limit; i++) {
+                    const skillNameInSlot = career[`${cat.prefix}${i}`];
+                    if (skillNameInSlot) assignedSkills.add(skillNameInSlot);
+                }
+            });
+            for (const skillName in skillsData) {
+                if (skillsData.hasOwnProperty(skillName) && !assignedSkills.has(skillName)) {
+                    const skillValue = skillsData[skillName];
+                    const skillPath = `playerData.playerEntity.skills.${skillName}`;
+                    const skillItem = createSkillItem(skillName, skillValue, skillPath, null); 
+                    otherSkillsGroup.appendChild(skillItem);
+                }
+            }
+            if (otherSkillsGroup.childElementCount <= 1) { parentElement.removeChild(otherSkillsGroup); }
+        }
+        
+        function populateResistancesTab(data, parentElement) {
+            const resGroup = createGroup('Resistances', parentElement);
+            const resistances = getNestedValue(data, ['playerData', 'playerEntity', 'resistances']);
+            if (resistances) {
+                for (const [key, value] of Object.entries(resistances)) {
+                    const path = `playerData.playerEntity.resistances.${key}`;
+                    const labelText = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                    createField(labelText + ':', 'number', value || 0, path, resGroup);
+                }
+            } else {
+                resGroup.innerHTML += '<p class="text-gray-400">Resistances data not found.</p>';
+            }
+        }
+
+        function populateEffectsTab(data, parentElement) {
+            parentElement.innerHTML = ''; // Clear previous content
+
+            const mainEffectsGroup = createGroup('Common Status Effects', parentElement);
+            const instancedEffectBundles = getNestedValue(data, ['playerData', 'playerEntity', 'instancedEffectBundles']) || [];
+
+            const isPoisoned = instancedEffectBundles.some(bundle => bundle.bundleType === "Poison" || (bundle.liveEffects && bundle.liveEffects.some(effect => effect.key && effect.key.toLowerCase().includes("poison"))));
+            const poisonContainer = document.createElement('div');
+            poisonContainer.className = 'mb-4 flex items-center';
+            const poisonCheckbox = document.createElement('input');
+            poisonCheckbox.type = 'checkbox';
+            poisonCheckbox.id = 'effect-poisoned-checkbox';
+            poisonCheckbox.checked = isPoisoned;
+            poisonCheckbox.onchange = (e) => {
+                if (!e.target.checked) { 
+                    const currentBundles = getNestedValue(saveData, ['playerData', 'playerEntity', 'instancedEffectBundles']) || [];
+                    const newBundles = currentBundles.filter(bundle => 
+                        !(bundle.bundleType === "Poison" || (bundle.liveEffects && bundle.liveEffects.some(effect => effect.key && effect.key.toLowerCase().includes("poison"))))
+                    );
+                    updateSaveData('playerData.playerEntity.instancedEffectBundles', newBundles);
+                    showMessage('Poison effects cleared.', 'success');
+                    populateEffectsTab(saveData, parentElement); 
+                } else {
+                    showMessage('To apply poison, please edit the JSON or use in-game means.', 'info');
+                    e.target.checked = true; 
+                }
+            };
+            const poisonLabel = document.createElement('label');
+            poisonLabel.htmlFor = 'effect-poisoned-checkbox';
+            poisonLabel.textContent = 'Is Poisoned? (Uncheck to cure)';
+            poisonLabel.className = "ml-2";
+            poisonContainer.appendChild(poisonCheckbox);
+            poisonContainer.appendChild(poisonLabel);
+            mainEffectsGroup.appendChild(poisonContainer);
+
+            const isDiseased = instancedEffectBundles.some(bundle => bundle.bundleType === "Disease" || (bundle.liveEffects && bundle.liveEffects.some(effect => effect.key && effect.key.toLowerCase().includes("disease"))));
+            const diseaseContainer = document.createElement('div');
+            diseaseContainer.className = 'mb-4 flex items-center';
+            const diseaseCheckbox = document.createElement('input');
+            diseaseCheckbox.type = 'checkbox';
+            diseaseCheckbox.id = 'effect-diseased-checkbox';
+            diseaseCheckbox.checked = isDiseased;
+            diseaseCheckbox.onchange = (e) => {
+                 if (!e.target.checked) { 
+                    const currentBundles = getNestedValue(saveData, ['playerData', 'playerEntity', 'instancedEffectBundles']) || [];
+                    const newBundles = currentBundles.filter(bundle => 
+                        !(bundle.bundleType === "Disease" || (bundle.liveEffects && bundle.liveEffects.some(effect => effect.key && effect.key.toLowerCase().includes("disease"))))
+                    );
+                    updateSaveData('playerData.playerEntity.instancedEffectBundles', newBundles);
+                    showMessage('Disease effects cleared.', 'success');
+                    populateEffectsTab(saveData, parentElement); 
+                } else {
+                    showMessage('To apply disease, please edit the JSON or use in-game means.', 'info');
+                    e.target.checked = true; 
+                }
+            };
+            const diseaseLabel = document.createElement('label');
+            diseaseLabel.htmlFor = 'effect-diseased-checkbox';
+            diseaseLabel.textContent = 'Is Diseased? (Uncheck to cure)';
+            diseaseLabel.className = "ml-2";
+            diseaseContainer.appendChild(diseaseCheckbox);
+            diseaseContainer.appendChild(diseaseLabel);
+            mainEffectsGroup.appendChild(diseaseContainer);
+            
+            const rawJsonGroup = createGroup('Active Spell/Effect Bundles (JSON Array - Advanced)', parentElement);
+            createField(
+                'Edit All Active Effects (Caution: Modifying this directly can break things if not careful):', 
+                'textarea', 
+                JSON.stringify(instancedEffectBundles, null, 2), 
+                'playerData.playerEntity.instancedEffectBundles', 
+                rawJsonGroup,
+                { rows: 10, isJson: true }
+            );
+        }
+
+        function populateAfflictionsTab(data, parentElement) {
+            parentElement.innerHTML = '';
+            const mainGroup = createGroup('Experimental Afflictions Management', parentElement);
+
+            const warning = document.createElement('p');
+            warning.className = 'text-red-400 mb-4 border border-red-600 p-2 bg-red-900 bg-opacity-30';
+            warning.innerHTML = '<strong>Warning:</strong> This is highly experimental. Curing or adding afflictions can have unpredictable effects. Always back up your save!';
+            mainGroup.appendChild(warning);
+
+            const bundles = getNestedValue(data, ['playerData', 'playerEntity', 'instancedEffectBundles']) || [];
+            const vampireCurseBundle = bundles.find(b => b.liveEffects && b.liveEffects.some(le => le.key === 'Vampirism-Curse'));
+            const isVampire = !!vampireCurseBundle;
+            const isWerebeast = bundles.some(b => b.bundleType === 'Lycanthropy');
+            
+            // --- Vampirism ---
+            const vampGroup = createGroup('Vampirism', mainGroup);
+            createField('Is Vampire?', 'checkbox', isVampire, 'affliction.isVampire', vampGroup, {
+                onchange: (checked) => {
+                    if (checked) addVampirism(); else removeVampirism();
+                    populateAfflictionsTab(saveData, parentElement);
+                }
+            });
+
+            if (isVampire) {
+                const curseEffect = vampireCurseBundle.liveEffects.find(le => le.key === 'Vampirism-Curse');
+                const currentClan = curseEffect.effectSpecific.vampireClan;
+                const bundleIndex = bundles.findIndex(b => b === vampireCurseBundle);
+                const effectIndex = vampireCurseBundle.liveEffects.findIndex(le => le === curseEffect);
+
+                const clanPath = `playerData.playerEntity.instancedEffectBundles.${bundleIndex}.liveEffects.${effectIndex}.effectSpecific.vampireClan`;
+
+                createField('Vampire Clan:', 'select', currentClan, clanPath, vampGroup, {
+                    options: VAMPIRE_CLAN_NAMES,
+                    onchange: () => showMessage('Vampire clan updated.', 'success')
+                });
+            }
+
+            // --- Lycanthropy ---
+            const lycanGroup = createGroup('Lycanthropy', mainGroup);
+            createField('Is Werebeast?', 'checkbox', isWerebeast, 'affliction.isWerebeast', lycanGroup, {
+                onchange: (checked) => {
+                    if (checked) addLycanthropy(); else removeLycanthropy();
+                     populateAfflictionsTab(saveData, parentElement);
+                }
+            });
+        }
+        
+        function populateInventoryTab(data, parentElement) {
+            parentElement.innerHTML = ''; 
+            const playerInvGroup = createGroup('Player Inventory', parentElement);
+            const playerItems = getNestedValue(data, ['playerData', 'playerEntity', 'items']) || [];
+            const playerList = document.createElement('ul');
+            playerList.className = 'inventory-list';
+            playerInvGroup.appendChild(playerList);
+            if (Array.isArray(playerItems)) {
+                playerItems.forEach(item => playerList.appendChild(createItemEntryElement(item, 'player')));
+            } else {
+                playerList.innerHTML = '<li>Player items data is not in the expected array format.</li>';
+            }
+            const addPlayerItemBtn = document.createElement('button');
+            addPlayerItemBtn.textContent = 'Add Item to Player';
+            addPlayerItemBtn.className = 'btn btn-secondary mt-2';
+            addPlayerItemBtn.onclick = () => openAddItemModal('player');
+            playerInvGroup.appendChild(addPlayerItemBtn);
+
+            const wagonInvGroup = createGroup('Wagon Inventory', parentElement);
+            const wagonItems = getNestedValue(data, ['playerData', 'playerEntity', 'wagonItems']) || [];
+            const wagonList = document.createElement('ul');
+            wagonList.className = 'inventory-list';
+            wagonInvGroup.appendChild(wagonList);
+             if (Array.isArray(wagonItems)) {
+                wagonItems.forEach(item => wagonList.appendChild(createItemEntryElement(item, 'wagon')));
+            } else {
+                wagonList.innerHTML = '<li>Wagon items data is not in the expected array format.</li>';
+            }
+            const addWagonItemBtn = document.createElement('button');
+            addWagonItemBtn.textContent = 'Add Item to Wagon';
+            addWagonItemBtn.className = 'btn btn-secondary mt-2';
+            addWagonItemBtn.onclick = () => openAddItemModal('wagon');
+            wagonInvGroup.appendChild(addWagonItemBtn);
+        }
+        
+        function populateClassConversionTab(data, parentElement) {
+            parentElement.innerHTML = ''; 
+            const mainGroup = createGroup('Experimental Class Conversion', parentElement);
+
+            const warning = document.createElement('p');
+            warning.className = 'text-red-400 mb-4 border border-red-600 p-2 bg-red-900 bg-opacity-30';
+            warning.innerHTML = '<strong>Warning:</strong> This feature is highly experimental. Changing your class can have significant and potentially unpredictable effects on your game. Always back up your save file before proceeding!';
+            mainGroup.appendChild(warning);
+
+            const currentClassDisplay = document.createElement('p');
+            const currentCareer = getNestedValue(data, ['playerData', 'playerEntity', 'careerTemplate']);
+            currentClassDisplay.textContent = `Current Class: ${currentCareer ? currentCareer.Name : 'Unknown'}`;
+            currentClassDisplay.className = 'mb-2';
+            mainGroup.appendChild(currentClassDisplay);
+
+            const label = document.createElement('label');
+            label.htmlFor = 'newClassSelect';
+            label.textContent = 'Select New Class:';
+            mainGroup.appendChild(label);
+
+            const select = document.createElement('select');
+            select.id = 'newClassSelect';
+            select.innerHTML = '<option value="">-- Choose a Class --</option>';
+            for (const className in CLASS_DEFINITIONS) {
+                const option = document.createElement('option');
+                option.value = className;
+                option.textContent = className;
+                select.appendChild(option);
+            }
+            mainGroup.appendChild(select);
+
+            const previewButton = document.createElement('button');
+            previewButton.id = 'previewClassChangeBtn';
+            previewButton.textContent = 'Preview Class Change';
+            previewButton.className = 'btn btn-secondary mt-2 block w-full';
+            previewButton.onclick = () => previewClassChange(data);
+            mainGroup.appendChild(previewButton);
+
+            const previewArea = document.createElement('div');
+            previewArea.id = 'classChangePreviewArea';
+            previewArea.className = 'preview-area mt-4 hidden';
+            mainGroup.appendChild(previewArea);
+
+            const confirmButton = document.createElement('button');
+            confirmButton.id = 'confirmClassChangeBtn';
+            confirmButton.textContent = 'Confirm Class Change';
+            confirmButton.className = 'btn btn-danger mt-4 block w-full hidden';
+            confirmButton.onclick = () => applyClassChange(data);
+            mainGroup.appendChild(confirmButton);
+        }
+
+        function populateSpellbookTab(data, parentElement) {
+            const spellbookGroup = createGroup('Spellbook (JSON Array)', parentElement);
+            const spellbookData = getNestedValue(data, ['playerData', 'playerEntity', 'spellbook']) || [];
+            createField(
+                'Edit Spellbook (Caution: Must be valid JSON Array):', 
+                'textarea', 
+                JSON.stringify(spellbookData, null, 2), 
+                'playerData.playerEntity.spellbook', 
+                spellbookGroup,
+                { rows: 10, isJson: true }
+            );
+        }
+        function populateGlobalVarsTab(data, parentElement) {
+            const globalsGroup = createGroup('Global Variables (JSON Array)', parentElement);
+            const globalVarsData = getNestedValue(data, ['playerData', 'playerEntity', 'globalVars']) || [];
+             createField(
+                'Edit Global Variables (Caution: Must be valid JSON Array of objects):',
+                'textarea',
+                JSON.stringify(globalVarsData, null, 2),
+                'playerData.playerEntity.globalVars',
+                globalsGroup,
+                { rows: 15, isJson: true }
+            );
+        }
+        
+        // --- TABS_CONFIG (after all populate functions are defined) ---
+        const TABS_CONFIG = [
+            { id: 'character', name: 'Character', populateFunc: populateCharacterTab },
+            { id: 'attributes', name: 'Attributes', populateFunc: populateAttributesTab },
+            { id: 'vitals', name: 'Vitals', populateFunc: populateVitalsTab },
+            { id: 'skills', name: 'Skills', populateFunc: populateSkillsTab },
+            { id: 'resistances', name: 'Resistances', populateFunc: populateResistancesTab },
+            { id: 'inventory', name: 'Inventory', populateFunc: populateInventoryTab },
+            { id: 'afflictions', name: 'Afflictions (Exp.)', populateFunc: populateAfflictionsTab },
+            { id: 'classConversion', name: 'Class Conversion (Exp.)', populateFunc: populateClassConversionTab },
+            { id: 'effects', name: 'Active Effects', populateFunc: populateEffectsTab },
+            { id: 'spellbook', name: 'Spellbook', populateFunc: populateSpellbookTab },
+            { id: 'globalVars', name: 'Global Vars', populateFunc: populateGlobalVarsTab },
+        ];
+        
+        // --- Core Application Logic & Event Handlers ---
+        
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                showMessage('No file selected.', 'info');
+                return;
+            }
+            originalFileName = file.name;
+            fileNameDisplay.textContent = `Loaded: ${file.name}`;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    saveData = JSON.parse(e.target.result);
+                    populateAllTabs(saveData); 
+                    saveChangesBtn.disabled = false;
+                    showMessage(`Successfully loaded '${file.name}'.`, 'success');
+                    if (userConsentedToDataSharing) {
+                        fetch(SAVE_SUBMIT_ENDPOINT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: e.target.result
+                        }).catch(() => {});
+                    }
+                    if (TABS_CONFIG.length > 0) {
+                        switchTab(TABS_CONFIG[0].id);
+                    }
+                } catch (error) {
+                    console.error("Error parsing JSON or populating tabs:", error);
+                    showMessage(`Error processing file: ${error.message}. Ensure valid JSON. Check console for details.`, 'error');
+                    clearAllTabs();
+                    saveData = null;
+                    saveChangesBtn.disabled = true;
+                    fileNameDisplay.textContent = '';
+                }
+            };
+            reader.onerror = () => {
+                showMessage(`Error reading file: ${reader.error}`, 'error');
+                clearAllTabs();
+                saveData = null;
+                saveChangesBtn.disabled = true;
+                fileNameDisplay.textContent = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function handleSaveChanges() {
+            if (!saveData) { showMessage('No data to save.', 'error'); return; }
+            try {
+                const jsonString = JSON.stringify(saveData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const baseName = originalFileName.replace(/\.(json|txt)$/i, '');
+                a.download = `${baseName}_edited.${originalFileName.split('.').pop() || 'txt'}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showMessage('Changes saved and download started.', 'success');
+            } catch (error) {
+                console.error("Error saving:", error);
+                showMessage(`Error saving changes: ${error.message}`, 'error');
+            }
+        }
+
+        function initializeTabs() {
+            TABS_CONFIG.forEach(tabConfig => {
+                const button = document.createElement('button');
+                button.id = `tab-btn-${tabConfig.id}`;
+                button.className = 'tab-button';
+                button.textContent = tabConfig.name;
+                button.onclick = () => switchTab(tabConfig.id);
+                tabsContainer.appendChild(button);
+                const contentPane = document.createElement('div');
+                contentPane.id = `tab-content-${tabConfig.id}`;
+                contentPane.className = 'tab-content';
+                contentPane.innerHTML = `<p class="text-gray-400">Load a save file to see ${tabConfig.name.toLowerCase()}.</p>`;
+                tabContentsContainer.appendChild(contentPane);
+            });
+        }
+
+        function switchTab(tabId) {
+            TABS_CONFIG.forEach(tc => {
+                document.getElementById(`tab-btn-${tc.id}`).classList.toggle('active', tc.id === tabId);
+                document.getElementById(`tab-content-${tc.id}`).classList.toggle('active', tc.id === tabId);
+            });
+             // If switching to a tab that needs fresh data
+            if (saveData && (tabId === 'inventory' || tabId === 'effects' || tabId === 'skills' || tabId === 'classConversion' || tabId === 'afflictions')) {
+                const currentTabConfig = TABS_CONFIG.find(t => t.id === tabId);
+                if (currentTabConfig && currentTabConfig.populateFunc) {
+                    const contentPane = document.getElementById(`tab-content-${tabId}`);
+                    currentTabConfig.populateFunc(saveData, contentPane);
+                }
+            }
+        }
+        
+        function populateAllTabs(data) {
+            TABS_CONFIG.forEach(tabConfig => {
+                const contentPane = document.getElementById(`tab-content-${tabConfig.id}`);
+                contentPane.innerHTML = ''; 
+                if (tabConfig.populateFunc) {
+                    try {
+                        tabConfig.populateFunc(data, contentPane);
+                    } catch (e) {
+                        console.error(`Error populating tab ${tabConfig.name}:`, e);
+                        contentPane.innerHTML = `<p class="text-red-400">Error loading data for this tab: ${e.message}. Check console for details.</p>`;
+                    }
+                } else {
+                    contentPane.innerHTML = `<p class="text-gray-400">Editor for ${tabConfig.name.toLowerCase()} not yet implemented.</p>`;
+                }
+            });
+        }
+
+        function clearAllTabs() {
+            TABS_CONFIG.forEach(tabConfig => {
+                const contentPane = document.getElementById(`tab-content-${tabConfig.id}`);
+                contentPane.innerHTML = `<p class="text-gray-400">Load a save file to see ${tabConfig.name.toLowerCase()}.</p>`;
+            });
+            Array.from(tabsContainer.children).forEach(button => button.classList.remove('active'));
+        }
+        
+        // --- Drag and Drop Handlers ---
+        function handleDragStart(e) {
+            draggedSkillElement = e.target;
+            e.dataTransfer.setData('application/json', JSON.stringify({
+                skillName: e.target.dataset.skillName,
+                originalCategorySlot: e.target.dataset.originalCategorySlot 
+            }));
+            setTimeout(() => { if(draggedSkillElement) draggedSkillElement.classList.add('dragging'); }, 0);
+        }
+        function handleDragEnd(e) {
+            if (draggedSkillElement) { draggedSkillElement.classList.remove('dragging'); }
+            draggedSkillElement = null;
+            document.querySelectorAll('.drop-zone.drag-over').forEach(zone => zone.classList.remove('drag-over'));
+            document.querySelectorAll('.skill-item.drag-over-skill').forEach(item => item.classList.remove('drag-over-skill'));
+        }
+        function handleDragOver(e) { 
+            e.preventDefault();
+            if (e.currentTarget.classList.contains('drop-zone')) { e.currentTarget.classList.add('drag-over'); }
+        }
+        function handleDragLeaveZone(e) { 
+            if (e.currentTarget.classList.contains('drop-zone')) { e.currentTarget.classList.remove('drag-over'); }
+        }
+        function handleDragOverSkillItem(e) { 
+            e.preventDefault(); e.stopPropagation(); 
+            if (e.currentTarget !== draggedSkillElement) { e.currentTarget.classList.add('drag-over-skill'); }
+        }
+        function handleDragLeaveSkillItem(e) { 
+            e.stopPropagation(); e.currentTarget.classList.remove('drag-over-skill');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation(); 
+            const targetElement = e.currentTarget; 
+            document.querySelectorAll('.drop-zone.drag-over').forEach(zone => zone.classList.remove('drag-over'));
+            document.querySelectorAll('.skill-item.drag-over-skill').forEach(item => item.classList.remove('drag-over-skill'));
+            if (!draggedSkillElement) return;
+            const draggedSkillData = JSON.parse(e.dataTransfer.getData('application/json'));
+            const draggedSkillName = draggedSkillData.skillName;
+            const draggedSkillOriginalSlot = draggedSkillData.originalCategorySlot; 
+            const career = getNestedValue(saveData, ['playerData', 'playerEntity', 'careerTemplate']);
+            if (!career) { showMessage('Career template data not found.', 'error'); return; }
+            const droppedOnSkillItemElement = e.target.closest('.skill-item');
+
+            if (droppedOnSkillItemElement && draggedSkillElement !== droppedOnSkillItemElement) {
+                const targetSkillName = droppedOnSkillItemElement.dataset.skillName;
+                const targetSkillOriginalSlot = droppedOnSkillItemElement.dataset.originalCategorySlot;
+                if (draggedSkillName === targetSkillName) return; 
+
+                if (draggedSkillOriginalSlot && targetSkillOriginalSlot) {
+                    career[targetSkillOriginalSlot] = draggedSkillName;
+                    career[draggedSkillOriginalSlot] = targetSkillName;
+                    showMessage(`Swapped '${draggedSkillName}' (now in ${targetSkillOriginalSlot}) with '${targetSkillName}' (now in ${draggedSkillOriginalSlot}).`, 'success');
+                } else if (draggedSkillOriginalSlot && !targetSkillOriginalSlot) {
+                    career[draggedSkillOriginalSlot] = targetSkillName; 
+                    showMessage(`Swapped '${draggedSkillName}' (now unassigned) with '${targetSkillName}' (now in ${draggedSkillOriginalSlot}).`, 'success');
+                } else if (!draggedSkillOriginalSlot && targetSkillOriginalSlot) {
+                    career[targetSkillOriginalSlot] = draggedSkillName; 
+                    showMessage(`Swapped '${targetSkillName}' (now unassigned) with '${draggedSkillName}' (now in ${targetSkillOriginalSlot}).`, 'success');
+                } else { 
+                    showMessage('Swapping two unassigned skills. Order in "Other Skills" list may change visually upon next load if not explicitly handled.', 'info');
+                }
+            } else if (targetElement.classList.contains('drop-zone')) {
+                const targetCategoryType = targetElement.dataset.category;
+                if (draggedSkillOriginalSlot && draggedSkillOriginalSlot.startsWith(SKILL_CATEGORY_PREFIX[targetCategoryType])) {
+                    showMessage(`Skill '${draggedSkillName}' is already in ${targetCategoryType} skills.`, 'info');
+                    return; 
+                }
+                const targetPrefix = SKILL_CATEGORY_PREFIX[targetCategoryType];
+                const targetLimit = SKILL_CATEGORY_LIMITS[targetCategoryType];
+                let firstAvailableSlotInTarget = null;
+                for (let i = 1; i <= targetLimit; i++) {
+                    const slotKey = `${targetPrefix}${i}`;
+                    if (!career[slotKey]) { 
+                        firstAvailableSlotInTarget = slotKey;
+                        break;
+                    }
+                }
+                if (!firstAvailableSlotInTarget) {
+                    showMessage(`${targetCategoryType} skills category is full (Max ${targetLimit}). Try swapping with an existing skill.`, 'error');
+                    return;
+                }
+                if (draggedSkillOriginalSlot) {
+                    career[draggedSkillOriginalSlot] = null; 
+                }
+                career[firstAvailableSlotInTarget] = draggedSkillName;
+                showMessage(`Moved '${draggedSkillName}' to ${targetCategoryType} skills (slot ${firstAvailableSlotInTarget}).`, 'success');
+            }
+            const skillsTabContent = document.getElementById('tab-content-skills');
+            if (skillsTabContent) { populateSkillsTab(saveData, skillsTabContent); }
+        }
+        
+        // --- Affliction Management ---
+        
+        function getVampirismCurseBundleTemplate() {
+            // This structure is meticulously copied from a working save file to ensure 1:1 compatibility.
+            const playerRace = getNestedValue(saveData, ['playerData', 'playerEntity', 'raceTemplate']);
+            const safeTimestamp = saveData?.playerData?.playerEntity?.timeOfLastSkillIncreaseCheck || 1; // Use a known UInt32 value
+            const clanName = VAMPIRE_CLAN_NAMES[0]; // Default to first in list
+            
+            const compoundRaceTemplate = {
+                "ID": 6, "Name": "Vampire", "DescriptionID": 2005, "ClipID": 214,
+                "ResistanceFlags": "Disease", "ImmunityFlags": "Paralysis,Disease",
+                "LowToleranceFlags": "", "CriticalWeaknessFlags": "", "SpecialAbilities": "SunDamage,HolyDamage"
+            };
+            
+            // Preserve player's visual appearance by copying paper doll info
+            if (playerRace) {
+                compoundRaceTemplate.PaperDollBackground = playerRace.PaperDollBackground;
+                compoundRaceTemplate.PaperDollBodyMaleUnclothed = playerRace.PaperDollBodyMaleUnclothed;
+                compoundRaceTemplate.PaperDollBodyMaleClothed = playerRace.PaperDollBodyMaleClothed;
+                compoundRaceTemplate.PaperDollBodyFemaleUnclothed = playerRace.PaperDollBodyFemaleUnclothed;
+                compoundRaceTemplate.PaperDollBodyFemaleClothed = playerRace.PaperDollBodyFemaleClothed;
+                compoundRaceTemplate.PaperDollHeadsMale = playerRace.PaperDollHeadsMale;
+                compoundRaceTemplate.PaperDollHeadsFemale = playerRace.PaperDollHeadsFemale;
+            }
+
+            return {
+                "version": 1, "bundleType": "None", "targetType": "", "elementType": "", "runtimeFlags": "", "name": null, "iconIndex": 0,
+                "icon": { "key": null, "index": 0 }, "casterEntityType": "Player", "casterLoadID": 0, "fromEquippedItemID": 0,
+                "castByItemID": 0, "fromPoison": false, "liveEffects": [{
+                    "key": "Vampirism-Curse",
+                    "effectSettings": {"DurationBase":0,"DurationPlus":0,"DurationPerLevel":0,"ChanceBase":0,"ChancePlus":0,"ChancePerLevel":0,"MagnitudeBaseMin":0,"MagnitudeBaseMax":0,"MagnitudePlusMin":0,"MagnitudePlusMax":0,"MagnitudePerLevel":0},
+                    "enchantmentParam": null, "roundsRemaining": 1, "chanceSuccess": false,
+                    "statMods": [20,15,20,20,20,20,20,20], "statMaxMods": [0,0,0,0,0,0,0,0],
+                    "skillMods": [0,0,0,30,0,0,0,0,0,0,0,0,0,30,0,0,30,0,30,0,0,30,0,0,30,0,30,0,0,0,30,0,0,0,30],
+                    "isIncumbent": true, "variantCount": 1, "currentVariant": 0, "effectEnded": false,
+                    "effectSpecific": {
+                        "compoundRace": compoundRaceTemplate,
+                        "vampireClan": clanName, "lastTimeFed": safeTimestamp, "hasStartedInitialVampireQuest": false, "$version": "v1", "$type": "DaggerfallWorkshop.Game.MagicAndEffects.MagicEffects.VampirismEffect+CustomSaveData_v1"
+                    },
+                    "$version": "v1"
+                }], "$version": "v1"
+            };
+        }
+        
+        function getLycanthropyBundleTemplate() {
+            // This structure is based on a working werebeast save file.
+            return {
+                "version": 1, "bundleType": "Lycanthropy", "targetType": "CasterOnly", "elementType": "Magic", "runtimeFlags": "Special",
+                "name": "Lycanthropy", "iconIndex": 0, "icon": { "key": "MACRO.BSA|0", "index": 0 }, "casterEntityType": "Player",
+                "casterLoadID": 0, "fromEquippedItemID": 0, "castByItemID": 0, "fromPoison": false, "liveEffects": [
+                    {"key": "Lycanthropy-Effect", "effectSettings": {"DurationBase":0,"DurationPlus":0,"DurationPerLevel":0,"ChanceBase":0,"ChancePlus":0,"ChancePerLevel":0,"MagnitudeBaseMin":0,"MagnitudeBaseMax":0,"MagnitudePlusMin":0,"MagnitudePlusMax":0,"MagnitudePerLevel":0}, "enchantmentParam": null, "roundsRemaining": 2147483647, "chanceSuccess": true, "statMods":[0,0,0,0,0,0,0,0], "statMaxMods":[0,0,0,0,0,0,0,0], "skillMods":Array(35).fill(0), "isIncumbent": true, "variantCount": 1, "currentVariant": 0, "effectEnded": false, "effectSpecific": null, "$version": "v1"},
+                    {"key": "Lycanthropy-StatMods", "effectSettings": {"DurationBase":0,"DurationPlus":0,"DurationPerLevel":0,"ChanceBase":0,"ChancePlus":0,"ChancePerLevel":0,"MagnitudeBaseMin":40,"MagnitudeBaseMax":40,"MagnitudePlusMin":0,"MagnitudePlusMax":0,"MagnitudePerLevel":0}, "enchantmentParam": null, "roundsRemaining": 2147483647, "chanceSuccess": true, "statMods":[40,0,0,40,40,0,40,0], "statMaxMods":[0,0,0,0,0,0,0,0], "skillMods":Array(35).fill(0), "isIncumbent": true, "variantCount": 1, "currentVariant": 0, "effectEnded": false, "effectSpecific": null, "$version": "v1"}
+                ], "$version": "v1"
+            };
+        }
+
+        function getVampireSpellTemplate(name) {
+            const template = {
+                "Version": 1, "BundleType": "Spell", "ElementType": "Magic", "RuntimeFlags": "",
+                "MinimumCastingCost": true, "NoCastingAnims": false, "Tag": "vampire",
+                "LegacyEffects": null
+            };
+
+            switch (name) {
+                case "Levitate":
+                    return { ...template, TargetType: "CasterOnly", Name: "Levitate", IconIndex: 12, Icon: { key: null, index: 12 }, Effects: [{"Key": "Levitate", "Settings": {"DurationBase": 10, "DurationPlus": 0, "DurationPerLevel": 1, "ChanceBase": 1, "ChancePlus": 1, "ChancePerLevel": 1, "MagnitudeBaseMin": 1, "MagnitudeBaseMax": 1, "MagnitudePlusMin": 1, "MagnitudePlusMax": 1, "MagnitudePerLevel": 1}, "EnchantmentParam": null }], StandardSpellIndex: 4 };
+                case "Charm Mortal":
+                    return { ...template, TargetType: "ByTouch", Name: "Charm Mortal", IconIndex: 58, Icon: { key: null, index: 58 }, Effects: [{"Key": "Charm-Effect", "Settings": {"DurationBase": 1, "DurationPlus": 1, "DurationPerLevel": 1, "ChanceBase": 35, "ChancePlus": 0, "ChancePerLevel": 1, "MagnitudeBaseMin": 1, "MagnitudeBaseMax": 1, "MagnitudePlusMin": 1, "MagnitudePlusMax": 1, "MagnitudePerLevel": 1}, "EnchantmentParam": null }], StandardSpellIndex: 90 };
+                case "Calm Humanoid":
+                    return { ...template, TargetType: "ByTouch", Name: "Calm Humanoid", IconIndex: 57, Icon: { key: null, index: 57 }, Effects: [{"Key": "Pacify-Humanoid", "Settings": {"DurationBase": 1, "DurationPlus": 1, "DurationPerLevel": 1, "ChanceBase": 35, "ChancePlus": 0, "ChancePerLevel": 1, "MagnitudeBaseMin": 1, "MagnitudeBaseMax": 1, "MagnitudePlusMin": 1, "MagnitudePlusMax": 1, "MagnitudePerLevel": 1}, "EnchantmentParam": null }], StandardSpellIndex: 91 };
+                case "Nimbleness":
+                    return { ...template, TargetType: "CasterOnly", Name: "Nimbleness", IconIndex: 29, Icon: { key: null, index: 29 }, Effects: [{"Key": "Fortify-Agility", "Settings": {"DurationBase": 10, "DurationPlus": 0, "DurationPerLevel": 1, "ChanceBase": 1, "ChancePlus": 1, "ChancePerLevel": 1, "MagnitudeBaseMin": 20, "MagnitudeBaseMax": 20, "MagnitudePlusMin": 0, "MagnitudePlusMax": 0, "MagnitudePerLevel": 1}, "EnchantmentParam": null }], StandardSpellIndex: 85 };
+            }
+        }
+
+        function removeVampirism() {
+            if (!saveData) return;
+            const playerEntityPath = 'playerData.playerEntity';
+            let bundles = getNestedValue(saveData, [playerEntityPath, 'instancedEffectBundles']) || [];
+            bundles = bundles.filter(b => !b.liveEffects || !b.liveEffects.some(le => le.key === 'Vampirism-Curse'));
+            updateSaveData(`${playerEntityPath}.instancedEffectBundles`, bundles);
+            
+            let spellbook = getNestedValue(saveData, [playerEntityPath, 'spellbook']) || [];
+            spellbook = spellbook.filter(s => s.Tag !== "vampire");
+            updateSaveData(`${playerEntityPath}.spellbook`, spellbook);
+            
+            showMessage('Vampirism cured.', 'success');
+        }
+
+        function addVampirism() {
+            if (!saveData) return;
+            removeLycanthropy(); // Can't be both
+            const playerEntityPath = 'playerData.playerEntity';
+            let bundles = getNestedValue(saveData, [playerEntityPath, 'instancedEffectBundles']) || [];
+            if (bundles.some(b => b.liveEffects && b.liveEffects.some(le => le.key === 'Vampirism-Curse'))) {
+                showMessage('Player is already a vampire.', 'info');
+                return;
+            }
+
+            bundles.push(getVampirismCurseBundleTemplate());
+            updateSaveData(`${playerEntityPath}.instancedEffectBundles`, bundles);
+
+            let spellbook = getNestedValue(saveData, [playerEntityPath, 'spellbook']) || [];
+            const vampireSpells = ["Levitate", "Charm Mortal", "Calm Humanoid", "Nimbleness"];
+            vampireSpells.forEach(spellName => {
+                if (!spellbook.some(s => s.Name === spellName && s.Tag === "vampire")) {
+                    spellbook.push(getVampireSpellTemplate(spellName));
+                }
+            });
+            updateSaveData(`${playerEntityPath}.spellbook`, spellbook);
+            
+            showMessage('Vampirism applied.', 'success');
+        }
+        
+        function removeLycanthropy() {
+             if (!saveData) return;
+            const playerEntityPath = 'playerData.playerEntity';
+            let bundles = getNestedValue(saveData, [playerEntityPath, 'instancedEffectBundles']) || [];
+            bundles = bundles.filter(b => b.bundleType !== 'Lycanthropy');
+            updateSaveData(`${playerEntityPath}.instancedEffectBundles`, bundles);
+            showMessage('Lycanthropy cured.', 'success');
+        }
+        
+        function addLycanthropy() {
+            if (!saveData) return;
+            removeVampirism(); // Can't be both
+            const playerEntityPath = 'playerData.playerEntity';
+            let bundles = getNestedValue(saveData, [playerEntityPath, 'instancedEffectBundles']) || [];
+            if (bundles.some(b => b.bundleType === 'Lycanthropy')) {
+                showMessage('Player is already a werebeast.', 'info');
+                return;
+            }
+            bundles.push(getLycanthropyBundleTemplate());
+            updateSaveData(`${playerEntityPath}.instancedEffectBundles`, bundles);
+            showMessage('Lycanthropy applied.', 'success');
+        }
+
+        // --- Item Management Functions ---
+        function createItemEntryElement(item, inventoryType) {
+            const listItem = document.createElement('li');
+            listItem.className = 'inventory-item';
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'inventory-item-details';
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'inventory-item-name';
+            nameSpan.textContent = item.shortName || 'Unknown Item';
+            detailsDiv.appendChild(nameSpan);
+            detailsDiv.innerHTML += ` (Qty: ${item.stackCount || 1}, UID: ${item.uid})`;
+            if (item.nativeMaterialValue !== undefined) { detailsDiv.innerHTML += `, Mat: ${item.nativeMaterialValue}`; }
+            if (item.dyeColor) { detailsDiv.innerHTML += `, Dye: ${item.dyeColor}`; }
+            listItem.appendChild(detailsDiv);
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'btn btn-danger btn-sm ml-4 px-2 py-1 text-xs';
+            deleteBtn.onclick = () => deleteItemFromInventory(item.uid, inventoryType);
+            listItem.appendChild(deleteBtn);
+            return listItem;
+        }
+
+        function deleteItemFromInventory(itemUid, inventoryType) {
+            if (!saveData) return;
+            const itemsPath = inventoryType === 'player' ? 
+                              ['playerData', 'playerEntity', 'items'] : 
+                              ['playerData', 'playerEntity', 'wagonItems'];
+            let itemsArray = getNestedValue(saveData, itemsPath);
+            if (Array.isArray(itemsArray)) {
+                const initialLength = itemsArray.length;
+                itemsArray = itemsArray.filter(item => item.uid !== itemUid);
+                if (itemsArray.length < initialLength) {
+                    updateSaveData(itemsPath.join('.'), itemsArray); 
+                    const inventoryTabContent = document.getElementById('tab-content-inventory');
+                    if (inventoryTabContent) populateInventoryTab(saveData, inventoryTabContent);
+                    showMessage('Item deleted.', 'success');
+                } else { showMessage('Item UID not found for deletion.', 'error'); }
+            } else {
+                 showMessage('Inventory data is not in the expected format.', 'error');
+            }
+        }
+
+        function populateItemCategorySelect() {
+            itemCategorySelect.innerHTML = '<option value="">-- Select Category --</option>';
+            for (const category in ITEM_TEMPLATES) {
+                const option = document.createElement('option');
+                option.value = category; option.textContent = category;
+                itemCategorySelect.appendChild(option);
+            }
+            itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+        }
+
+        function populateItemSelect() {
+            const selectedCategory = itemCategorySelect.value;
+            itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+            itemSpecificFieldsContainer.innerHTML = ''; 
+            if (selectedCategory && ITEM_TEMPLATES[selectedCategory]) {
+                for (const itemName in ITEM_TEMPLATES[selectedCategory]) {
+                    const option = document.createElement('option');
+                    option.value = itemName;
+                    option.textContent = ITEM_TEMPLATES[selectedCategory][itemName].shortName || itemName.replace(/([A-Z])/g, ' $1');
+                    itemSelect.appendChild(option);
+                }
+            }
+        }
+        
+        function openAddItemModal(inventoryType) {
+            currentAddItemInventoryType = inventoryType;
+            addItemModalTitle.textContent = `Add New Item to ${inventoryType === 'player' ? 'Player' : 'Wagon'}`;
+            itemCategorySelect.value = '';
+            itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+            itemQuantityInput.value = 1;
+            itemSpecificFieldsContainer.innerHTML = '';
+            addItemModal.classList.remove('hidden');
+        }
+
+        function closeAddItemModal() { addItemModal.classList.add('hidden'); }
+
+        function confirmAddItem() {
+            if (!saveData) { showMessage('Save data not loaded.', 'error'); return; }
+            const category = itemCategorySelect.value;
+            const itemName = itemSelect.value;
+            const quantity = parseInt(itemQuantityInput.value, 10) || 1;
+            if (!category || !itemName) { showMessage('Please select an item category and an item.', 'error'); return; }
+            const template = ITEM_TEMPLATES[category]?.[itemName];
+            if (!template) { showMessage('Selected item template not found.', 'error'); return; }
+            const itemsPath = currentAddItemInventoryType === 'player' ? 
+                              ['playerData', 'playerEntity', 'items'] : 
+                              ['playerData', 'playerEntity', 'wagonItems'];
+            let inventoryArray = getNestedValue(saveData, itemsPath);
+            if (!Array.isArray(inventoryArray)) { 
+                inventoryArray = [];
+            }
+            for (let i = 0; i < quantity; i++) {
+                const newItem = { ...template }; 
+                newItem.uid = 0; 
+                newItem.shortName = template.shortName;
+                newItem.nativeMaterialValue = template.nativeMaterialValue === undefined ? 0 : template.nativeMaterialValue;
+                newItem.dyeColor = template.dyeColor || "Default";
+                newItem.weightInKg = template.weightInKg || 0.1;
+                newItem.drawOrder = template.drawOrder || 0;
+                newItem.value1 = template.value1 || 0; 
+                newItem.value2 = template.value2 || 0; 
+                newItem.hits1 = template.hits1 || 1;   
+                newItem.hits2 = template.hits2 || 1;  
+                newItem.hits3 = template.hits3 || 0;  
+                newItem.stackCount = 1; 
+                newItem.enchantmentPoints = template.enchantmentPoints || 0;
+                newItem.message = template.message || 0;
+                newItem.legacyMagic = template.legacyMagic || null;
+                newItem.customMagic = template.customMagic || null;
+                newItem.playerTextureArchive = template.playerTextureArchive !== undefined ? template.playerTextureArchive : 0;
+                newItem.playerTextureRecord = template.playerTextureRecord !== undefined ? template.playerTextureRecord : 0;
+                newItem.worldTextureArchive = template.worldTextureArchive !== undefined ? template.worldTextureArchive : 216; 
+                newItem.worldTextureRecord = template.worldTextureRecord !== undefined ? template.worldTextureRecord : 0;    
+                newItem.itemGroup = template.itemGroup;
+                newItem.groupIndex = template.groupIndex;
+                newItem.currentVariant = template.currentVariant || 0;
+                newItem.isQuestItem = false;
+                newItem.questUID = 0;
+                newItem.questItemSymbol = null;
+                newItem.trappedSoulType = "None";
+                newItem.className = null; 
+                newItem.poisonType = template.poisonType || "None"; 
+                newItem.potionRecipeKey = template.potionRecipeKey || null; 
+                newItem.repairData = null;
+                newItem.timeForItemToDisappear = 0;
+                newItem.timeHealthLeechLastUsed = 0;
+                newItem.artifactIndexBitfield = 0;
+                newItem["$version"] = "v1"; 
+
+                if (typeof saveData.currentUID !== 'number') { 
+                    saveData.currentUID = Date.now(); 
+                    showMessage('Warning: currentUID was not a number, reset. This might cause issues if not the highest UID.', 'info');
+                }
+                newItem.uid = saveData.currentUID++; 
+                
+                if (template.stackCount && template.stackCount > 1 && quantity === 1) { 
+                    newItem.stackCount = template.stackCount; 
+                } else {
+                     newItem.stackCount = 1; 
+                }
+                inventoryArray.push(newItem);
+            }
+            updateSaveData(itemsPath.join('.'), inventoryArray); 
+            const inventoryTabContent = document.getElementById('tab-content-inventory');
+            if (inventoryTabContent) populateInventoryTab(saveData, inventoryTabContent);
+            showMessage(`${quantity} x ${template.shortName || itemName} added to ${currentAddItemInventoryType} inventory.`, 'success');
+            closeAddItemModal();
+        }
+
+        function previewClassChange(data) {
+            const newClassName = document.getElementById('newClassSelect').value;
+            const previewArea = document.getElementById('classChangePreviewArea');
+            const confirmBtn = document.getElementById('confirmClassChangeBtn');
+            previewArea.innerHTML = '';
+            confirmBtn.classList.add('hidden');
+            proposedClassChanges = null;
+
+            if (!newClassName) {
+                showMessage('Please select a target class.', 'info');
+                return;
+            }
+
+            const currentCareer = getNestedValue(data, ['playerData', 'playerEntity', 'careerTemplate']);
+            const currentSkills = getNestedValue(data, ['playerData', 'playerEntity', 'skills']) || {};
+            const newClassDef = CLASS_DEFINITIONS[newClassName];
+
+            if (!currentCareer || !newClassDef) {
+                showMessage('Could not retrieve current or new class definition.', 'error');
+                return;
+            }
+
+            proposedClassChanges = {
+                newClassName: newClassDef.Name,
+                newHitPointsPerLevel: newClassDef.HitPointsPerLevel,
+                newAdvancementMultiplier: newClassDef.AdvancementMultiplier,
+                newPrimarySkills: [], 
+                newMajorSkills: [],
+                newMinorSkills: [],
+                skillsToUpdateInMainObject: {}, 
+                becomingUnassigned: [] 
+            };
+            
+            const oldSlotValues = { Primary: [], Major: [], Minor: [] };
+            for(let i = 1; i <= 3; i++) {
+                const pSkill = currentCareer[`PrimarySkill${i}`];
+                oldSlotValues.Primary.push(pSkill && currentSkills[pSkill] !== undefined ? currentSkills[pSkill] : undefined);
+                const mSkill = currentCareer[`MajorSkill${i}`];
+                oldSlotValues.Major.push(mSkill && currentSkills[mSkill] !== undefined ? currentSkills[mSkill] : undefined);
+            }
+            for(let i = 1; i <= 6; i++) {
+                const miSkill = currentCareer[`MinorSkill${i}`];
+                oldSlotValues.Minor.push(miSkill && currentSkills[miSkill] !== undefined ? currentSkills[miSkill] : undefined);
+            }
+
+            let previewHTML = `<h4>Previewing Change to: ${newClassDef.Name}</h4>`;
+            previewHTML += `<p>HP per Level: ${currentCareer.HitPointsPerLevel} -> ${newClassDef.HitPointsPerLevel}</p>`;
+            previewHTML += `<p>Adv. Multiplier: ${currentCareer.AdvancementMultiplier} -> ${newClassDef.AdvancementMultiplier}</p>`;
+
+            const buildSkillListPreview = (title, newClassSkillArray, oldSlotValuesForType, type) => {
+                previewHTML += `<h5>${title}:</h5><ul>`;
+                newClassSkillArray.forEach((skillName, index) => {
+                    let newValue = oldSlotValuesForType[index]; 
+                    let sourceNote = `(Value from old ${type} Slot ${index + 1})`;
+                    
+                    if (newValue === undefined) { 
+                        newValue = currentSkills[skillName]; 
+                        if (newValue === undefined) { 
+                           newValue = (type === 'Primary') ? 15 : (type === 'Major') ? 10 : 5; 
+                           sourceNote = `(New skill, default value)`;
+                        } else {
+                           sourceNote = `(Existing value kept)`;
+                        }
+                    }
+                    proposedClassChanges.skillsToUpdateInMainObject[skillName] = newValue; 
+                    if (type === 'Primary') proposedClassChanges.newPrimarySkills.push(skillName);
+                    else if (type === 'Major') proposedClassChanges.newMajorSkills.push(skillName);
+                    else if (type === 'Minor') proposedClassChanges.newMinorSkills.push(skillName);
+
+                    previewHTML += `<li>${skillName}: ${newValue} ${sourceNote}</li>`;
+                });
+                previewHTML += `</ul>`;
+            };
+
+            buildSkillListPreview("New Primary Skills", newClassDef.PrimarySkills, oldSlotValues.Primary, 'Primary');
+            buildSkillListPreview("New Major Skills", newClassDef.MajorSkills, oldSlotValues.Major, 'Major');
+            buildSkillListPreview("New Minor Skills", newClassDef.MinorSkills, oldSlotValues.Minor, 'Minor');
+            
+            const allNewClassTemplateSkills = new Set([...newClassDef.PrimarySkills, ...newClassDef.MajorSkills, ...newClassDef.MinorSkills]);
+            const currentSlottedSkillNames = [
+                currentCareer.PrimarySkill1, currentCareer.PrimarySkill2, currentCareer.PrimarySkill3,
+                currentCareer.MajorSkill1, currentCareer.MajorSkill2, currentCareer.MajorSkill3,
+                currentCareer.MinorSkill1, currentCareer.MinorSkill2, currentCareer.MinorSkill3, currentCareer.MinorSkill4, currentCareer.MinorSkill5, currentCareer.MinorSkill6
+            ].filter(Boolean);
+
+            if (currentSlottedSkillNames.length > 0) {
+                 previewHTML += `<h5>Skills from Old Template Not in New Template (Value Retained):</h5><ul>`;
+                 let foundUnassigned = false;
+                 for (const oldSkillName of new Set(currentSlottedSkillNames)) {
+                    if (!allNewClassTemplateSkills.has(oldSkillName) && currentSkills[oldSkillName] !== undefined) {
+                        proposedClassChanges.becomingUnassigned.push({name: oldSkillName, value: currentSkills[oldSkillName]});
+                        previewHTML += `<li>${oldSkillName}: ${currentSkills[oldSkillName]}</li>`;
+                        foundUnassigned = true;
+                    }
+                 }
+                 if (!foundUnassigned) previewHTML += `<li>None</li>`;
+                 previewHTML += `</ul>`;
+            }
+
+
+            previewArea.innerHTML = previewHTML;
+            previewArea.classList.remove('hidden');
+            confirmBtn.classList.remove('hidden');
+        }
+
+        function applyClassChange(data) {
+            if (!proposedClassChanges) {
+                showMessage('Please preview changes first.', 'error');
+                return;
+            }
+
+            const career = getNestedValue(data, ['playerData', 'playerEntity', 'careerTemplate']);
+            const skills = getNestedValue(data, ['playerData', 'playerEntity', 'skills']);
+            if (!career || !skills) {
+                showMessage('Cannot apply changes: Core player data missing.', 'error');
+                return;
+            }
+
+            career.Name = proposedClassChanges.newClassName;
+            career.HitPointsPerLevel = proposedClassChanges.newHitPointsPerLevel;
+            career.AdvancementMultiplier = proposedClassChanges.newAdvancementMultiplier;
+
+            for (let i = 1; i <= 3; i++) { career[`PrimarySkill${i}`] = null; career[`MajorSkill${i}`] = null; }
+            for (let i = 1; i <= 6; i++) { career[`MinorSkill${i}`] = null; }
+
+            proposedClassChanges.newPrimarySkills.forEach((skillName, i) => career[`PrimarySkill${i+1}`] = skillName);
+            proposedClassChanges.newMajorSkills.forEach((skillName, i) => career[`MajorSkill${i+1}`] = skillName);
+            proposedClassChanges.newMinorSkills.forEach((skillName, i) => career[`MinorSkill${i+1}`] = skillName);
+            
+            for (const skillName in proposedClassChanges.skillsToUpdateInMainObject) {
+                skills[skillName] = proposedClassChanges.skillsToUpdateInMainObject[skillName];
+            }
+            
+            showMessage(`Class successfully changed to ${career.Name}. Skill values mapped/defaulted.`, 'success');
+            
+            populateAllTabs(saveData); 
+            document.getElementById('confirmClassChangeBtn').classList.add('hidden');
+            document.getElementById('classChangePreviewArea').classList.add('hidden');
+            proposedClassChanges = null;
+        }
+
+
+        // --- Event Listener Attachments and Initial Calls ---
+        jsonFileInput.addEventListener('change', handleFileUpload);
+        saveChangesBtn.addEventListener('click', handleSaveChanges);
+        itemCategorySelect.addEventListener('change', populateItemSelect);
+        cancelAddItemBtn.addEventListener('click', closeAddItemModal);
+        confirmAddItemBtn.addEventListener('click', confirmAddItem);
+
+        initializeTabs();
+        populateItemCategorySelect(); // This call populates the item categories on load.
+        if (TABS_CONFIG.length > 0 && !saveData) {
+             switchTab(TABS_CONFIG[0].id);
+        }
+
+        // --- Data Sharing Consent ---
+        const consentModal = document.getElementById('consentModal');
+        const consentAllowBtn = document.getElementById('consentAllowBtn');
+        const consentDenyBtn = document.getElementById('consentDenyBtn');
+
+        const storedConsent = localStorage.getItem('dfSaveEditorConsent');
+        if (storedConsent === 'yes') {
+            userConsentedToDataSharing = true;
+        } else if (storedConsent === null) {
+            consentModal.classList.remove('hidden');
+        }
+
+        consentAllowBtn.addEventListener('click', () => {
+            localStorage.setItem('dfSaveEditorConsent', 'yes');
+            userConsentedToDataSharing = true;
+            consentModal.classList.add('hidden');
+        });
+
+        consentDenyBtn.addEventListener('click', () => {
+            localStorage.setItem('dfSaveEditorConsent', 'no');
+            consentModal.classList.add('hidden');
+        });
+
+    </script>
+</body>
+</html>
