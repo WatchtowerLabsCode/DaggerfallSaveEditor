@@ -57,8 +57,8 @@ Each save slot is a numbered folder (e.g., `Save0/`, `Save1/`). The file you nee
 
 ```
 daggerfall/
-├── daggerfall.html     # The entire application (single self-contained file)
-├── favicon.png         # Site favicon
+├── index.html     # The entire application (single self-contained file)
+├── favicon.png         # Site favicon - https://www.flaticon.com/free-icon/two-swords_12477433
 ├── api/
 │   └── submit-save/
 │       └── index.php   # Anonymous save data collection endpoint
